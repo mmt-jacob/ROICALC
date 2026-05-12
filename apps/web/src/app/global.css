@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  input, textarea, select, button {
+    @apply outline-none focus:outline-none;
+  }
+}
+
+/* ─── Fluent Reveal Glow — SummaryCard ──────────────────────────────────── */
+.reveal-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.reveal-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle 110px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 100%
+  );
+  opacity: var(--glow-opacity, 0);
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Lift on hover — card itself */
+.reveal-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.10);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Keep all card children above the glow layer */
+.reveal-card > * {
+  position: relative;
+  z-index: 2;
+}
