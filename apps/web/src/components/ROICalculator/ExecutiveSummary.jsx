@@ -30,6 +30,7 @@ export function ExecutiveSummary({
     return true;
   });
 
+  const compareAOptions = activeOptions.filter((o) => o.value !== "best");
   const compareAIndex = activeOptions.findIndex((o) => o.value === compareA);
   // B options: only scenarios that come after A in the list
   const compareBOptions = activeOptions.filter((_, i) => i > compareAIndex);
@@ -61,7 +62,7 @@ export function ExecutiveSummary({
   const contamAvoided = Math.max(0, (scenA.contaminations || 0) - (scenB.contaminations || 0));
   const bedDaysFreed   = Math.max(0, (scenA.bedDays || 0) - (scenB.bedDays || 0));
   const mortalityReduction = contamAvoided * 0.034;
-  const akiAvoided         = contamAvoided * 0.104;
+  const akiAvoided         = contamAvoided * 0.134;
   const antibioticDays     = contamAvoided * 1;
 
   const roundedPayback = Math.round(paybackMonths ?? 0);
@@ -113,7 +114,7 @@ export function ExecutiveSummary({
           Comparing
         </span>
         <select value={compareA} onChange={(e) => handleCompareAChange(e.target.value)} className={selectCls}>
-          {activeOptions.map((o) => (
+          {compareAOptions.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
@@ -123,12 +124,13 @@ export function ExecutiveSummary({
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
-        {!isMobile && (
-          <span className="ml-auto text-xs text-[#9AA1AA] italic">
-            💡 Blue boxes are clickable to view supporting sources &amp; studies
-          </span>
-        )}
       </div>
+
+      {!isMobile && (
+        <p className="text-sm text-[#1A202C] font-bold mb-4">
+          💡 Blue boxes are clickable to view supporting sources &amp; studies
+        </p>
+      )}
 
       {/* Clinical Results */}
       {sectionLabel("Clinical Results")}
@@ -149,18 +151,19 @@ export function ExecutiveSummary({
           href={SHOWPAD_LINK_BED_DAYS}
         />
         <SummaryCard
-          label="Excess Mortality Risk Reduction"
+          label="Potential Mortalities Avoided"
           value={`${formatNumber(Math.round(mortalityReduction))} People`}
           sublabel="contaminations avoided × 3.4%"
           icon={<Users size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
           compact={isMobile}
           href={SHOWPAD_LINK}
+          tooltip={`Potentially avoided ${formatNumber(Math.round(mortalityReduction))} ${Math.round(mortalityReduction) === 1 ? "death" : "deaths"} associated with a false positive blood culture contamination`}
         />
         <SummaryCard
           label="AKI Events Avoided"
           value={formatNumber(Math.round(akiAvoided))}
-          sublabel="contaminations avoided × 10.4%"
+          sublabel="contaminations avoided × 13.4%"
           icon={<Droplets size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
           compact={isMobile}

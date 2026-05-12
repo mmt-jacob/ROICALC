@@ -58,11 +58,11 @@ export default function ROICalculator() {
   // Shared alt device
   const [baselineAltUtilization, setBaselineAltUtilization] = useState(80);
   const [baselineAltDeviceCost, setBaselineAltDeviceCost] = useState("15.0");
-  const [baselineAltDevicesPerCulture, setBaselineAltDevicesPerCulture] = useState(2);
+  const [baselineAltDevicesPerCulture, setBaselineAltDevicesPerCulture] = useState(1);
 
   // Steripath device params (shared Sc. 2 & 3)
   const [steripathDeviceCost, setSteripathDeviceCost] = useState("19.35");
-  const [steripathDevicesPerCulture, setSteripathDevicesPerCulture] = useState(2);
+  const [steripathDevicesPerCulture, setSteripathDevicesPerCulture] = useState(1);
 
   // Scenario 2 — Steripath Implemented
   const [steripathUtilization, setSteripathUtilization] = useState(80);
@@ -89,6 +89,13 @@ export default function ROICalculator() {
   const [mobileView, setMobileView] = useState(false);
   const [scrolledPastInputs, setScrolledPastInputs] = useState(false);
   const resultsRef = useRef(null);
+
+  useEffect(() => {
+    const checkMobile = () => setMobileView(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolledPastInputs(window.scrollY > 300);

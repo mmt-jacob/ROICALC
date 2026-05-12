@@ -92,7 +92,7 @@ export async function exportToPDF({
   // Clinical metric calculations — mortality always rounded to whole number
   const contamAvoided      = Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0));
   const mortalityReduction = Math.round(contamAvoided * 0.034);
-  const akiAvoided         = contamAvoided * 0.104;
+  const akiAvoided         = contamAvoided * 0.134;
   const antibioticDays     = contamAvoided * 1;
 
   // ── Scenario definitions — baseline | current | best ───────────────────────

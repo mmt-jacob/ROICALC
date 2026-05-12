@@ -56,20 +56,9 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period }) {
   draft += `  • Contaminations avoided: ${fmtN(contamAvoided)} events\n`;
   draft += `  • Net cost avoidance: ${fmt$(costAvoidance)}\n`;
   draft += `  • Bed days freed: ${fmtN(bedDays)}\n`;
-  draft += `  • Excess mortality risk reduction: ${fmtN(mortalityReduction)} patients\n`;
+  draft += `  • Potential mortalities avoided: ${fmtN(mortalityReduction)} patients\n`;
   if (paybackMonths !== null) {
     draft += `  • Estimated payback period: ${paybackMonths} month${paybackMonths !== 1 ? "s" : ""}\n`;
-  }
-
-  if (showBestScenario) {
-    const bestContamAvoided = Math.max(0, (baseline.contaminations || 0) - (best.contaminations || 0));
-    const additionalContam = bestContamAvoided - contamAvoided;
-    const bestCostAvoidance = Math.max(0, (baseline.totalCost || 0) - (best.totalCost || 0));
-    const additionalCost = bestCostAvoidance - costAvoidance;
-
-    if (additionalContam > 0 || additionalCost > 0) {
-      draft += `\nThere is also an opportunity to increase Steripath® compliance further — potentially avoiding an additional ${fmtN(additionalContam)} contaminations and ${fmt$(additionalCost)} in costs annually.\n`;
-    }
   }
 
   draft += `\nI've attached the full Impact Analysis for your review. Happy to walk through the details and discuss next steps.\n\n`;
