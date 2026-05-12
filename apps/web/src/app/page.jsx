@@ -33,33 +33,6 @@ function Toggle({ checked, onChange, color = "bg-[#0842A6]" }) {
 }
 
 export default function ROICalculator() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [error, setError] = useState("");
-  const [isChecking, setIsChecking] = useState(true);
-
-  useEffect(() => {
-    if (typeof sessionStorage !== "undefined") {
-      const auth = sessionStorage.getItem("roi_authenticated");
-      if (auth === "true") setIsAuthenticated(true);
-    }
-    setIsChecking(false);
-  }, []);
-
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (passwordInput === "mmt2006") {
-      if (typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem("roi_authenticated", "true");
-      }
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Incorrect password. Please try again.");
-      setPasswordInput("");
-    }
-  };
-
   // Hospital Name
   const [hospitalName, setHospitalName] = useState("");
 
@@ -345,47 +318,6 @@ export default function ROICalculator() {
       setIsEmailingPDF(false);
     }
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F2F6F7]">
-        <div className="text-center max-w-sm w-full mx-6">
-          <h1 className="text-3xl font-bold mb-4 text-[#151F26]">
-            Welcome to the ROI Calculator
-          </h1>
-          <p className="text-base text-[#636D78] mb-8">
-            Please enter the password to access the calculator.
-          </p>
-          <form onSubmit={handlePasswordSubmit} className="space-y-4 text-left">
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold text-[#0842A6] mb-1"
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                required
-                className="w-full h-12 px-4 border-2 border-[#99CCFF] rounded-xl focus:outline-none focus:border-[#0061D5] focus:ring-4 focus:ring-[#0061D5]/10 text-[#151F26] font-semibold"
-              />
-            </div>
-            {error && <p className="text-[#F05C47] text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={isChecking}
-              className="w-full flex justify-center py-3 px-4 rounded-xl text-base font-semibold text-white bg-[#0842A6] hover:bg-[#0B2D71] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-            >
-              {isChecking ? "Checking…" : "Access Calculator"}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   // Calculator settings card (Rate Mode only)
   const settingsCard = (
