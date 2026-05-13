@@ -157,41 +157,24 @@ export async function exportToPDF({
   const period         = Number(inputs.period) || 12;
   const paybackRounded = Math.round(current.paybackMonths ?? 0);
 
-  let execPara =
-    `Over ${period} ${period === 1 ? "month" : "months"}, implementing Steripath® at ${util} utilization reduces the contamination ` +
-    `rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, avoiding an estimated ` +
-    `${fmtN(Math.round(contamAvoided))} false-positive blood culture contaminations. This translates to ` +
-    `${fmtMoney(current.netSavings)} in net cost avoidance`;
+  const execPara =
+    `Over ${period} ${period === 1 ? "month" : "months"}, implementing Steripath® at ${util} utilization reduces the ` +
+    `contamination rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, which translates to the following results:`;
 
-  if (current.paybackMonths != null && paybackRounded > 0) {
-    execPara += `, with a ${paybackRounded}-month device payback period.`;
-  } else {
-    execPara += ".";
-  }
-
-  execPara +=
-    ` Clinically, this could prevent approximately ${mortalityReduction} ${mortalityReduction === 1 ? "death" : "deaths"}, ` +
-    `${fmtN(Math.round(akiAvoided))} AKI ${Math.round(akiAvoided) === 1 ? "event" : "events"}, ` +
-    `and ${fmtN(Math.round(antibioticDays))} antibiotic treatment ${Math.round(antibioticDays) === 1 ? "day" : "days"} associated with contaminated cultures.`;
-
-  doc.setFillColor(239, 246, 255);
-  const summaryLines = doc.splitTextToSize(execPara, pageW - margin * 2 - 16);
-  const summaryH = summaryLines.length * 5.6 + 20;
-  doc.roundedRect(margin - 2, y - 2, pageW - margin * 2 + 4, summaryH, 3, 3, "F");
-  doc.setDrawColor(199, 219, 255);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin - 2, y - 2, pageW - margin * 2 + 4, summaryH, 3, 3, "S");
-
+  // Title — centered, bold, prominent
   doc.setTextColor(...blue);
-  doc.setFontSize(7.5);
+  doc.setFontSize(12);
   doc.setFont(undefined, "bold");
-  doc.text("EXECUTIVE SUMMARY", margin + 2, y + 6);
+  doc.text("EXECUTIVE SUMMARY", pageW / 2, y + 7, { align: "center" });
+
+  // Sentence — centered, normal weight, smaller
   doc.setTextColor(...darkGray);
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
-  doc.text(summaryLines, margin + 2, y + 14);
+  const summaryLines = doc.splitTextToSize(execPara, pageW - margin * 2);
+  doc.text(summaryLines, pageW / 2, y + 15, { align: "center" });
 
-  y += summaryH + 6;
+  y += 15 + summaryLines.length * 5.5 + 5;
 
   // ── KPI CARDS ─────────────────────────────────────────────────────────────
   // Pre-render lucide icons as PNG images so they match the website exactly
@@ -257,7 +240,7 @@ export async function exportToPDF({
 
     // Label — white, block centered halfway between icon bottom and value
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(6.5);
+    doc.setFontSize(8);
     doc.setFont(undefined, "normal");
     const labelLines = doc.splitTextToSize(kpi.label, cw - 4);
     const labelBlockH = (labelLines.length - 1) * labelLineH;
@@ -276,7 +259,7 @@ export async function exportToPDF({
 
     // Sublabel — below value (only for 3 clinical cards)
     if (kpi.sublabel) {
-      doc.setFontSize(4.5);
+      doc.setFontSize(6);
       doc.setFont(undefined, "normal");
       doc.setTextColor(200, 220, 255);
       doc.text(kpi.sublabel, cx + cw / 2, rowY + fixedSubOffsetMM, { align: "center" });
@@ -333,19 +316,12 @@ export async function exportToPDF({
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
   doc.text("Scenario Comparison", margin, y);
-  doc.setFontSize(6.5);
-  doc.setFont(undefined, "normal");
-  doc.setTextColor(...slateGray);
-  doc.text(
-    "Col 2 deltas vs. Baseline; Col 3 deltas vs. Steripath® Implemented. Green = improvement, red = worse.",
-    margin, y + 5,
-  );
-  y += 10;
+  y += 6;
 
   const tableRowDefs = [
     {
       label:    "Avoided Contamination Events",
-      sublabel: "False positives avoided vs. Sc. 1",
+      sublabel: "False-positive cultures avoided vs. Pre-Steripath® Baseline",
       vals: {
         baseline: 0,
         current:  Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0)),
@@ -355,13 +331,13 @@ export async function exportToPDF({
     },
     {
       label:    "Blended Contamination Rate",
-      sublabel: "Sc. 1 baseline; Sc. 2-3 weighted by utilization",
+      sublabel: "Contamination rate weighted by Utilization Rate",
       vals: { baseline: baseline.blendedRate, current: current.blendedRate, best: best.blendedRate },
       isCurrency: false, isRate: true, isAvoidance: false,
     },
     {
       label:    "Bed Days Freed",
-      sublabel: "Sc. 2: total vs. Sc. 1 · Sc. 3: total vs. Sc. 1",
+      sublabel: "Estimated bed days freed vs. Pre-Steripath® Baseline",
       vals: {
         baseline: 0,
         current:  current.bedDaysFreed,
@@ -377,7 +353,7 @@ export async function exportToPDF({
     },
     {
       label:    "Device Investment",
-      sublabel: "Total device cost for the scenario",
+      sublabel: "Total device cost",
       vals: {
         baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : null,
         current:  current.deviceCost,
@@ -392,8 +368,8 @@ export async function exportToPDF({
       isCurrency: true, isRate: false, isAvoidance: false,
     },
     {
-      label:    "Net Savings vs. Baseline",
-      sublabel: "Cost avoided vs. Sc. 1, after device investment",
+      label:    "Net Savings",
+      sublabel: "Cost avoided relative to Pre-Steripath® Baseline, after device investment",
       vals: { baseline: 0, current: current.netSavings, best: best.netSavings },
       isCurrency: true, isRate: false, isAvoidance: true,
     },
@@ -456,7 +432,7 @@ export async function exportToPDF({
     ...activeScenarios.map((s) => fmtCell(def.vals[s.key], s.key, def)),
   ]);
 
-  const bodyCellH    = 10;
+  const bodyCellH    = 13;
   const deltaFromBot = 2.5;
   const valuePadTop  = 2;
   const labelColW    = 56;
@@ -518,18 +494,18 @@ export async function exportToPDF({
         if (data.column.index === 0) {
           const sub = sublabels[data.row.index];
           if (sub) {
-            doc.setFontSize(4.5);
+            doc.setFontSize(6);
             doc.setFont(undefined, "normal");
             doc.setTextColor(...slateGray);
             const subLines = doc.splitTextToSize(sub, data.cell.width - 5);
-            doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 3);
+            doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 3.5);
           }
         }
         if (data.column.index > 0) {
           const key   = `${data.row.index}-${data.column.index}`;
           const delta = deltaCells.get(key);
           if (!delta) return;
-          doc.setFontSize(4.5);
+          doc.setFontSize(6);
           doc.setFont(undefined, "normal");
           doc.setTextColor(...(delta.isGood ? green : red));
           doc.text(

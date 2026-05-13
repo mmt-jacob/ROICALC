@@ -86,12 +86,11 @@ export function ExecutiveSummary({
     (calculations.baseline.contaminationCost || 0) -
     (calculations.current.contaminationCost || 0);
 
-  // Sc3 section shows the *incremental* return of going Sc2→Sc3:
-  //   how much extra contamination cost do you avoid per additional $1 invested?
-  const bestDev = calculations.best.deviceCost || 0;
-  const targetDeviceInvestment = Math.max(0, bestDev - steripathDev);
+  // Sc3: same formula as Sc2 (gross contamination savings / total device investment)
+  // then subtract Sc2's ratio to show the incremental improvement.
+  const targetDeviceInvestment = calculations.best.deviceCost || 0;
   const targetGrossSavings =
-    (calculations.current.contaminationCost || 0) -
+    (calculations.baseline.contaminationCost || 0) -
     (calculations.best.contaminationCost || 0);
 
   const selectCls = [

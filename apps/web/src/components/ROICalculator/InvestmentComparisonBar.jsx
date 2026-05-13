@@ -13,14 +13,13 @@ export default function InvestmentComparisonBar({
   const returnRatio =
     totalDeviceInvestment > 0 ? Math.max(0, grossSavings / totalDeviceInvestment) : 0;
 
-  // Incremental return for Sc3: contamination savings of going Sc2→Sc3
-  // divided by the additional device investment required.
+  // Sc3 ratio uses the same formula as Sc2 (gross contamination savings / total device investment)
+  // then subtracts Sc2's ratio — showing how much MORE return per $1 Sc3 delivers over Sc2.
   const targetReturnRatio =
     showTarget && targetDeviceInvestment > 0
-      ? Math.max(0, targetGrossSavings / targetDeviceInvestment)
+      ? Math.max(0, targetGrossSavings / targetDeviceInvestment - returnRatio)
       : 0;
 
-  // Show Sc3's incremental ratio standalone (not as a delta from Sc2's ratio)
   const additionalRatio = targetReturnRatio;
 
   const maxVisualRatio = 10;
@@ -92,7 +91,7 @@ export default function InvestmentComparisonBar({
                 {formatCurrency(additionalRatio)}
               </p>
               <p className="text-sm text-[#636D78] mt-0.5">
-                cost avoided per additional $1 invested compared to initial Steripath Implementation
+                additional cost avoided
               </p>
             </>
           ) : (

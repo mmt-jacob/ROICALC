@@ -181,7 +181,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
   const rows = [
     {
       label: "Avoided Contamination Events",
-      sublabel: "Annual false-positive cultures avoided vs. Pre-Steripath® Baseline",
+      sublabel: "False-positive cultures avoided vs. Pre-Steripath® Baseline",
       values: {
         baseline: 0,
         current: Math.max(0, baseline.contaminations - current.contaminations),
@@ -193,7 +193,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
     },
     {
       label: "Blended Contamination Rate",
-      sublabel: "Sc. 1 shows effective baseline rate; Sc. 2–3 show the weighted rate based on device utilization mix",
+      sublabel: "Contamination rate weighted by Utilization Rate",
       values: {
         baseline: baseline.blendedRate,
         current: current.blendedRate,
@@ -205,7 +205,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
     },
     {
       label: "Bed Days Freed",
-      sublabel: "Sc. 2: total freed vs. Sc. 1 · Sc. 3: total freed vs. Sc. 1 (delta vs. Sc. 2 shown in subtext)",
+      sublabel: "Estimated bed days freed vs. Pre-Steripath® Baseline",
       values: {
         baseline: 0,
         current: current.bedDaysFreed,
@@ -217,7 +217,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
     },
     {
       label: "Cost of Contaminations",
-      sublabel: "Annual direct cost burden from false-positive cultures",
+      sublabel: "Direct cost burden from false-positive cultures",
       values: {
         baseline: baseline.contaminationCost,
         current: current.contaminationCost,
@@ -228,7 +228,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
     },
     {
       label: "Device Investment",
-      sublabel: "Total device cost for the scenario",
+      sublabel: "Total device cost",
       values: {
         baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : null,
         current: current.deviceCost,
@@ -249,7 +249,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
       isCurrency: true,
     },
     {
-      label: "Net Savings vs. Baseline",
+      label: "Net Savings",
       sublabel: "Cost avoided relative to Pre-Steripath® Baseline, after device investment",
       values: {
         baseline: 0,
@@ -272,10 +272,9 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
         <div className="text-left">
           <h2 className="text-lg font-bold text-[#151F26]">Scenario Comparison</h2>
           {!isCollapsed && (
-            <p className="text-sm text-[#636D78] mt-1 max-w-2xl">
-              All figures reflect estimated annual impact. Arrows show the direction of comparison —
+            <p className="text-sm text-[#636D78] mt-1">
+              All figures reflect estimated impact. Arrows show the direction of comparison —
               each column's delta reflects improvement or change relative to the column to its left.
-              Green indicates improvement, red indicates a worse outcome.
             </p>
           )}
         </div>
