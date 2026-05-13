@@ -12,7 +12,7 @@ import { MethodologySection } from "@/components/ROICalculator/MethodologySectio
 import { Footer } from "@/components/ROICalculator/Footer";
 import { AccountNameInput } from "@/components/ROICalculator/AccountNameInput";
 import { StudySelectionModal } from "@/components/ROICalculator/StudySelectionModal";
-import { acquireGraphToken, sendEmailViaGraph, getSignedInAccount } from "@/utils/graphMailSender";
+import { acquireGraphToken, sendEmailViaGraph, getSignedInAccount, warmUpAuth } from "@/utils/graphMailSender";
 
 function Toggle({ checked, onChange, color = "bg-[#0842A6]" }) {
   return (
@@ -271,8 +271,8 @@ export default function ROICalculator() {
     }
   };
 
-  // Opens the study selection modal
-  const handleEmailPDF = () => setShowStudyModal(true);
+  // Opens the study selection modal and warms the MSAL cache in the background
+  const handleEmailPDF = () => { setShowStudyModal(true); warmUpAuth(); };
 
   // Called when the user confirms the modal
   const handleEmailPDFConfirm = async (selectedStudies, emailBody, recipientEmail) => {

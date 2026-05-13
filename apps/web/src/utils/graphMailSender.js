@@ -16,10 +16,24 @@ function clearInteractionLock() {
     .forEach((k) => sessionStorage.removeItem(k));
 }
 
+// Call this when the email modal opens — warms the MSAL cache via hidden iframe so that
+// acquireGraphToken can complete silently (no popup) when the user clicks Send.
+export async function warmUpAuth() {
+  try {
+    await ensureInitialized();
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) return; // already have a cached account, nothing to do
+    await msalInstance.ssoSilent({ scopes: GRAPH_MAIL_SCOPES });
+  } catch {
+    // Silently ignored — warmup is best-effort
+  }
+}
+
 export async function acquireGraphToken() {
   await ensureInitialized();
   const accounts = msalInstance.getAllAccounts();
 
+  // 1. Cached token — fully silent, no network call
   if (accounts.length > 0) {
     try {
       const result = await msalInstance.acquireTokenSilent({
@@ -32,6 +46,7 @@ export async function acquireGraphToken() {
     }
   }
 
+  // 2. Popup — must be called directly within a user gesture to avoid browser blocking
   try {
     const result = await msalInstance.acquireTokenPopup({ scopes: GRAPH_MAIL_SCOPES });
     return result.accessToken;
