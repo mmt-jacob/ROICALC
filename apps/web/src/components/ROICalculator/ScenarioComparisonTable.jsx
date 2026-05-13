@@ -48,6 +48,7 @@ function signedNumber(v) {
 }
 
 function buildDeltaLabel(cellVal, refVal, isCurrency, isRate, refLabel) {
+  if (cellVal === null || refVal === null) return null;
   const cell = Number(cellVal) || 0;
   const ref = Number(refVal) || 0;
   const delta = cell - ref;
@@ -68,6 +69,7 @@ function buildDeltaLabel(cellVal, refVal, isCurrency, isRate, refLabel) {
 }
 
 function deltaColor(cellVal, refVal, isSigned, isAvoidance, isRate) {
+  if (cellVal === null || refVal === null) return "neutral";
   const delta = (Number(cellVal) || 0) - (Number(refVal) || 0);
   const threshold = isRate ? 0.001 : 0.5;
   if (Math.abs(delta) < threshold) return "neutral";
@@ -82,6 +84,7 @@ function MetricRow({
   suppressDeltas,
 }) {
   const fmt = (val, key) => {
+    if (val === null) return "—";
     if ((key === "baseline" && isSigned) || (key === "baseline" && isAvoidance)) return "—";
     if (isCurrency && isSigned) return signedCurrency(val);
     if (!isCurrency && isSigned) return signedNumber(val);
@@ -160,7 +163,7 @@ function MetricRow({
   );
 }
 
-export function ScenarioComparisonTable({ calculations, showBestScenario = true, isMobile }) {
+export function ScenarioComparisonTable({ calculations, showBestScenario = true, isMobile, inputs = {} }) {
   const { baseline, current, best } = calculations;
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -201,12 +204,12 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
       isRate: true,
     },
     {
-      label: "Bed Days Freed vs. Baseline",
-      sublabel: "Sc. 2: total freed vs. Sc. 1 · Sc. 3: additional freed vs. Sc. 2",
+      label: "Bed Days Freed",
+      sublabel: "Sc. 2: total freed vs. Sc. 1 · Sc. 3: total freed vs. Sc. 1 (delta vs. Sc. 2 shown in subtext)",
       values: {
         baseline: 0,
         current: current.bedDaysFreed,
-        best: Math.max(0, best.bedDaysFreed - current.bedDaysFreed),
+        best: best.bedDaysFreed,
       },
       isSigned: false,
       isAvoidance: true,
@@ -227,7 +230,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
       label: "Device Investment",
       sublabel: "Total device cost for the scenario",
       values: {
-        baseline: baseline.deviceCost,
+        baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : null,
         current: current.deviceCost,
         best: best.deviceCost,
       },

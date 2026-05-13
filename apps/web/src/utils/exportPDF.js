@@ -73,7 +73,6 @@ export async function exportToPDF({
     if (abs >= 1_000)     return sign + Math.round(abs / 1_000) + "K";
     return sign + Math.round(abs).toLocaleString();
   };
-  // No tilde prefix — just compact dollar formatting
   const fmtMoney = (v) => {
     const n = Math.abs(Number(v) || 0);
     if (n >= 1_000_000) return "$" + (n / 1_000_000).toFixed(2) + "M";
@@ -89,13 +88,11 @@ export async function exportToPDF({
   const rateMode = inputs.globalRateMode || "blended";
   const isBlended = rateMode === "blended";
 
-  // Clinical metric calculations — mortality always rounded to whole number
   const contamAvoided      = Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0));
   const mortalityReduction = Math.round(contamAvoided * 0.034);
   const akiAvoided         = contamAvoided * 0.134;
   const antibioticDays     = contamAvoided * 1;
 
-  // ── Scenario definitions — baseline | current | best ───────────────────────
   const SCENARIO_DEFS = [
     { key: "baseline", label: "Pre-Steripath®\nBaseline" },
     { key: "current",  label: "Steripath®\nImplemented" },
@@ -134,13 +131,151 @@ export async function exportToPDF({
     y = 38;
   }
 
-  // ── SIDE-BY-SIDE: General Assumptions (left) + Scenario Inputs (right) ─────
-  // Layout: [margin=14] [genW=82] [gap=5] [scenario inputs] [margin=14]
+  // ── EXECUTIVE SUMMARY ──────────────────────────────────────────────────────
+  const currentRateDisplay = isBlended
+    ? fmtP(current.blendedRate)
+    : fmtP(inputs.currentSteripathRate);
+
+  const util           = fmtP(inputs.steripathUtilization, 0);
+  const period         = Number(inputs.period) || 12;
+  const paybackRounded = Math.round(current.paybackMonths ?? 0);
+
+  let execPara =
+    `Over ${period} months, implementing Steripath® at ${util} utilization reduces the contamination ` +
+    `rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, avoiding an estimated ` +
+    `${fmtN(Math.round(contamAvoided))} false-positive blood culture contaminations. This translates to ` +
+    `${fmtMoney(current.netSavings)} in net cost avoidance`;
+
+  if (current.paybackMonths != null && paybackRounded > 0) {
+    execPara += `, with a ${paybackRounded}-month device payback period.`;
+  } else {
+    execPara += ".";
+  }
+
+  execPara +=
+    ` Clinically, this could prevent approximately ${mortalityReduction} ${mortalityReduction === 1 ? "death" : "deaths"}, ` +
+    `${fmtN(Math.round(akiAvoided))} AKI ${Math.round(akiAvoided) === 1 ? "event" : "events"}, ` +
+    `and ${fmtN(Math.round(antibioticDays))} antibiotic treatment ${Math.round(antibioticDays) === 1 ? "day" : "days"} associated with contaminated cultures.`;
+
+  if (showBestScenario) {
+    const extraSavings = (best.netSavings || 0) - (current.netSavings || 0);
+    const targetRateDisplay = isBlended
+      ? fmtP(best.blendedRate)
+      : fmtP(inputs.bestSteripathRate);
+    if (extraSavings > 500) {
+      execPara +=
+        ` Increasing compliance to reach a ${targetRateDisplay} target rate could grow total savings to ` +
+        `${fmtMoney(best.netSavings)} — an additional ${fmtMoney(extraSavings)} over the ${period}-month period.`;
+    }
+  }
+
+  doc.setFillColor(239, 246, 255);
+  const summaryLines = doc.splitTextToSize(execPara, pageW - margin * 2 - 16);
+  const summaryH = summaryLines.length * 5.6 + 20;
+  doc.roundedRect(margin - 2, y - 2, pageW - margin * 2 + 4, summaryH, 3, 3, "F");
+  doc.setDrawColor(199, 219, 255);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin - 2, y - 2, pageW - margin * 2 + 4, summaryH, 3, 3, "S");
+
+  doc.setTextColor(...blue);
+  doc.setFontSize(7.5);
+  doc.setFont(undefined, "bold");
+  doc.text("EXECUTIVE SUMMARY", margin + 2, y + 6);
+  doc.setTextColor(...darkGray);
+  doc.setFontSize(9);
+  doc.setFont(undefined, "normal");
+  doc.text(summaryLines, margin + 2, y + 14);
+
+  y += summaryH + 6;
+
+  // ── KPI CARDS: CLINICAL RESULTS ────────────────────────────────────────────
+  const paybackLabel = current.paybackMonths === null ? "N/A"
+    : paybackRounded === 0 ? "< 1 mo."
+    : `${paybackRounded} mo.`;
+
+  const clinicalKpis = [
+    { label: "Contaminations\nAvoided",          value: fmtN(Math.round(contamAvoided)) },
+    { label: "Bed Days\nFreed",                  value: fmtN(Math.max(0, Math.round(current.bedDaysFreed))) },
+    { label: "Potential Mortalities\nAvoided",   value: String(mortalityReduction) },
+    { label: "AKI Events\nAvoided",              value: fmtN(Math.round(akiAvoided)) },
+    { label: "Antibiotic Treatment\nDays Saved", value: fmtN(Math.round(antibioticDays)) },
+  ];
+  const financialKpis = [
+    { label: "Net Cost\nAvoidance", value: fmtCompact(current.netSavings) },
+    { label: "Payback\nPeriod",     value: paybackLabel },
+  ];
+
+  const cardGap  = 3;
+  const cardH    = 27;
+  const totalW   = pageW - margin * 2;
+
+  // Clinical Results label
+  doc.setFontSize(9);
+  doc.setFont(undefined, "bold");
+  doc.setTextColor(...darkGray);
+  doc.text("Clinical Results", pageW / 2, y + 5, { align: "center" });
+  y += 9;
+
+  const clinCardW = (totalW - cardGap * (clinicalKpis.length - 1)) / clinicalKpis.length;
+  const drawKpiCard = (kpi, cx, cw) => {
+    doc.setFillColor(...blue);
+    doc.roundedRect(cx, y, cw, cardH, 3, 3, "F");
+    doc.setTextColor(180, 210, 255);
+    doc.setFontSize(6);
+    doc.setFont(undefined, "normal");
+    const labelLines = kpi.label.split("\n");
+    labelLines.forEach((line, li) => {
+      doc.text(line, cx + cw / 2, y + 6 + li * 4, { align: "center" });
+    });
+    doc.setTextColor(255, 255, 255);
+    const valFontSize = kpi.value.length > 7 ? 12 : 14;
+    doc.setFontSize(valFontSize);
+    doc.setFont(undefined, "bold");
+    doc.text(kpi.value, cx + cw / 2, y + cardH - 5, { align: "center" });
+  };
+
+  clinicalKpis.forEach((kpi, i) => drawKpiCard(kpi, margin + i * (clinCardW + cardGap), clinCardW));
+  y += cardH + 7;
+
+  // Financial Results label
+  doc.setFontSize(9);
+  doc.setFont(undefined, "bold");
+  doc.setTextColor(...darkGray);
+  doc.text("Financial Results", pageW / 2, y + 5, { align: "center" });
+  y += 9;
+
+  const finCardW = (totalW - cardGap * (financialKpis.length - 1)) / financialKpis.length;
+  financialKpis.forEach((kpi, i) => drawKpiCard(kpi, margin + i * (finCardW + cardGap), finCardW));
+  y += cardH + 4;
+
+  // Page 1 footer
+  doc.setFontSize(7);
+  doc.setFont(undefined, "normal");
+  doc.setTextColor(...lightGray);
+  doc.text("©2026 Magnolia Medical Technologies, Inc. MKT-01039A", pageW - margin, pageH - 6, { align: "right" });
+
+  // ── PAGE 2: INPUT TABLES + SCENARIO COMPARISON ────────────────────────────
+  doc.addPage();
+
+  doc.setFillColor(...darkBlue);
+  doc.rect(0, 0, pageW, 12, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8.5);
+  doc.setFont(undefined, "bold");
+  doc.text("Steripath® Impact Analysis — Inputs & Scenario Comparison", margin, 8);
+  if (hospitalName) {
+    doc.setFontSize(8);
+    doc.setFont(undefined, "normal");
+    doc.text(hospitalName, pageW - margin, 8, { align: "right" });
+  }
+
+  y = 18;
+
+  // ── Section labels ─────────────────────────────────────────────────────────
   const genW      = 82;
   const colGap    = 5;
-  const scenLeftX = margin + genW + colGap; // = 101
+  const scenLeftX = margin + genW + colGap;
 
-  // Section labels
   doc.setFontSize(8.5);
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
@@ -150,7 +285,7 @@ export async function exportToPDF({
 
   const tablesStartY = y;
 
-  // ── Build Scenario Inputs rows first so we know the row count ──────────────
+  // ── Scenario Inputs rows ───────────────────────────────────────────────────
   const baselineRateStr = inputs.baselineHasAltProduct
     ? (isBlended
         ? fmtP(inputs.baselineAltBlendedRate) + " (blended)"
@@ -223,29 +358,22 @@ export async function exportToPDF({
     ...activeScenarios.map((s) => String(row.vals[s.key] ?? "—")),
   ]);
 
-  // ── General Assumptions rows (declared first — needed for equal-height calc) ─
+  // ── General Assumptions rows: Time Period → Volume → Cost → LOS ────────────
   const genAssumpRows = [
-    ["Annual Blood Culture Volume", fmtN(inputs.volume) + " cultures/yr"],
-    ["Baseline Contamination Rate", fmtP(inputs.baselineRate)],
+    ["Time Period",                  (Number(inputs.period) || 12) + " months"],
+    ["Blood Culture Volume",         fmtN(inputs.volume) + " cultures"],
     ["Cost per Contamination Event", fmtDollar(inputs.costPerCulture)],
     ["Extended Length of Stay",      (Number(inputs.losExtension) || 3.4) + " days"],
-    ["Analysis Period",              (Number(inputs.period) || 12) + " months"],
   ];
 
   // ── Equal-height calculation ────────────────────────────────────────────────
-  // Both tables must render to the same total height.
-  // Heights are: headerMinCellH + (numBodyRows × bodyMinCellH)
-  // We know the row counts exactly; adjust the shorter table's body row height.
   const GEN_HEADER_H  = 8;
   const SCEN_HEADER_H = 10;
   const BASE_BODY_H   = 8;
 
   const genNaturalH  = GEN_HEADER_H  + genAssumpRows.length * BASE_BODY_H;
   const scenNaturalH = SCEN_HEADER_H + inputRowDefs.length * BASE_BODY_H;
-
-  // Use the taller table's height as the target
-  const targetH = Math.max(genNaturalH, scenNaturalH);
-
+  const targetH      = Math.max(genNaturalH, scenNaturalH);
   const genBodyMinH  = (targetH - GEN_HEADER_H)  / genAssumpRows.length;
   const scenBodyMinH = (targetH - SCEN_HEADER_H) / inputRowDefs.length;
 
@@ -279,8 +407,8 @@ export async function exportToPDF({
   });
   const genFinalY = doc.lastAutoTable.finalY;
 
-  // ── Scenario Inputs table (right, same startY) ─────────────────────────────
-  const scenTotalW = pageW - scenLeftX - margin; // e.g. 297 - 101 - 14 = 182
+  // ── Scenario Inputs table (right) ──────────────────────────────────────────
+  const scenTotalW = pageW - scenLeftX - margin;
   const scenLabelW = 44;
   const scenDataW  = (scenTotalW - scenLabelW) / activeScenarios.length;
 
@@ -330,169 +458,6 @@ export async function exportToPDF({
 
   y = Math.max(genFinalY, scenFinalY) + 8;
 
-  // ── EXECUTIVE SUMMARY ──────────────────────────────────────────────────────
-  const currentRateDisplay = isBlended
-    ? fmtP(current.blendedRate)
-    : fmtP(inputs.currentSteripathRate);
-
-  const util           = fmtP(inputs.steripathUtilization, 0);
-  const paybackRounded = Math.round(current.paybackMonths ?? 0);
-
-  // Sentence 1: core impact at current scenario
-  let execPara =
-    `At ${fmtVol(inputs.volume)} annual blood cultures, reducing contamination from ` +
-    `${fmtP(inputs.baselineRate)} to ${currentRateDisplay} with Steripath® at ${util} utilization ` +
-    `could avoid ${fmtN(Math.round(contamAvoided))} contaminations, drive ` +
-    `${fmtMoney(current.netSavings)} in annual cost avoidance`;
-
-  if (current.paybackMonths != null && paybackRounded > 0) {
-    execPara += `, and achieve a ${paybackRounded}-month payback.`;
-  } else {
-    execPara += ".";
-  }
-
-  // Sentence 2 (Sc3 opportunity) or clinical tail
-  if (showBestScenario) {
-    const extraSavings   = (best.netSavings || 0) - (current.netSavings || 0);
-    const targetRateDisplay = isBlended
-      ? fmtP(best.blendedRate)
-      : fmtP(inputs.bestSteripathRate);
-    if (extraSavings > 500) {
-      execPara +=
-        ` Reaching a ${targetRateDisplay} target rate could increase total annual savings to ` +
-        `${fmtMoney(best.netSavings)}, while also reducing downstream clinical risks tied to ` +
-        `contamination such as increased risk of avoidable death, AKIs, and antibiotic treatment days.`;
-    } else {
-      execPara +=
-        ` This approach also helps reduce downstream clinical risks tied to contamination ` +
-        `such as increased risk of avoidable death, AKIs, and antibiotic treatment days.`;
-    }
-  } else {
-    execPara +=
-      ` This approach also helps reduce downstream clinical risks tied to contamination ` +
-      `such as increased risk of avoidable death, AKIs, and antibiotic treatment days.`;
-  }
-
-  doc.setFillColor(239, 246, 255);
-  const summaryLines = doc.splitTextToSize(execPara, pageW - margin * 2 - 16);
-  const summaryH = summaryLines.length * 5.6 + 20;
-  doc.roundedRect(margin - 2, y - 2, pageW - margin * 2 + 4, summaryH, 3, 3, "F");
-  doc.setDrawColor(199, 219, 255);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin - 2, y - 2, pageW - margin * 2 + 4, summaryH, 3, 3, "S");
-
-  doc.setTextColor(...blue);
-  doc.setFontSize(7.5);
-  doc.setFont(undefined, "bold");
-  doc.text("EXECUTIVE SUMMARY", margin + 2, y + 6);
-  doc.setTextColor(...darkGray);
-  doc.setFontSize(9);
-  doc.setFont(undefined, "normal");
-  doc.text(summaryLines, margin + 2, y + 14);
-
-  y += summaryH + 4;
-
-  // Page 1 footer
-  doc.setFontSize(7);
-  doc.setFont(undefined, "normal");
-  doc.setTextColor(...lightGray);
-  doc.text("©2026 Magnolia Medical Technologies, Inc. MKT-01039A", pageW - margin, pageH - 6, { align: "right" });
-
-  // ── PAGE 2: OUTPUTS ────────────────────────────────────────────────────────
-  doc.addPage();
-
-  doc.setFillColor(...darkBlue);
-  doc.rect(0, 0, pageW, 12, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8.5);
-  doc.setFont(undefined, "bold");
-  doc.text("Steripath® Impact Analysis — Results & Scenario Comparison", margin, 8);
-  if (hospitalName) {
-    doc.setFontSize(8);
-    doc.setFont(undefined, "normal");
-    doc.text(hospitalName, pageW - margin, 8, { align: "right" });
-  }
-
-  y = 18;
-
-  // ── KPI METRIC CARDS ───────────────────────────────────────────────────────
-  const paybackLabel = current.paybackMonths === null ? "N/A"
-    : paybackRounded === 0 ? "< 1 mo."
-    : `${paybackRounded} mo.`;
-
-  const clinicalKpis = [
-    { label: "Contaminations\nAvoided",           value: fmtN(Math.round(contamAvoided)) },
-    { label: "Bed Days\nFreed",                   value: fmtN(Math.max(0, Math.round(current.bedDaysFreed))) },
-    { label: "Excess Mortality\nRisk Reduction",  value: String(mortalityReduction) },   // already rounded int
-    { label: "AKI Events\nAvoided",               value: fmtN(Math.round(akiAvoided)) },
-    { label: "Antibiotic Treatment\nDays Saved",  value: fmtN(Math.round(antibioticDays)) },
-  ];
-  const financialKpis = [
-    { label: "Net Annual\nCost Avoidance", value: fmtCompact(current.netSavings) },
-    { label: "Payback\nPeriod",            value: paybackLabel },
-  ];
-
-  const cardGap  = 3;
-  const cardH    = 28;
-  const totalW   = pageW - margin * 2;
-  const dividerW = 3;
-  const clinW    = totalW * (5 / 7) - dividerW / 2;
-  const finW     = totalW * (2 / 7) - dividerW / 2;
-  const clinCardW = (clinW - cardGap * (clinicalKpis.length - 1)) / clinicalKpis.length;
-  const finCardW  = (finW - cardGap * (financialKpis.length - 1)) / financialKpis.length;
-
-  // Context label
-  doc.setFillColor(240, 245, 255);
-  doc.roundedRect(margin - 2, y, pageW - margin * 2 + 4, 7, 1.5, 1.5, "F");
-  doc.setTextColor(...slateGray);
-  doc.setFontSize(6.5);
-  doc.setFont(undefined, "normal");
-  doc.text("Comparing:", margin + 2, y + 4.8);
-  doc.setFont(undefined, "bold");
-  const compALabel = "Pre-Steripath® Baseline";
-  const compAWidth = doc.getTextWidth(compALabel);
-  doc.text(compALabel, margin + 22, y + 4.8);
-  doc.setFont(undefined, "normal");
-  doc.text("vs.", margin + 24 + compAWidth, y + 4.8);
-  doc.setFont(undefined, "bold");
-  doc.setTextColor(...blue);
-  doc.text("Steripath® Implemented", margin + 32 + compAWidth, y + 4.8);
-  y += 11;
-
-  // Section labels
-  const finLabelX = margin + clinW + dividerW;
-  doc.setFontSize(6);
-  doc.setFont(undefined, "bold");
-  doc.setTextColor(...lightGray);
-  doc.text("CLINICAL RESULTS", margin, y - 1);
-  doc.text("FINANCIAL RESULTS", finLabelX, y - 1);
-
-  const drawKpiCard = (kpi, cx, cw) => {
-    doc.setFillColor(...blue);
-    doc.roundedRect(cx, y, cw, cardH, 3, 3, "F");
-    doc.setTextColor(180, 210, 255);
-    doc.setFontSize(6.5);
-    doc.setFont(undefined, "normal");
-    const labelLines = kpi.label.split("\n");
-    labelLines.forEach((line, li) => {
-      doc.text(line, cx + cw / 2, y + 6 + li * 4.5, { align: "center" });
-    });
-    doc.setTextColor(255, 255, 255);
-    const valFontSize = kpi.value.length > 7 ? 13 : 15;
-    doc.setFontSize(valFontSize);
-    doc.setFont(undefined, "bold");
-    doc.text(kpi.value, cx + cw / 2, y + cardH - 5, { align: "center" });
-  };
-
-  clinicalKpis.forEach((kpi, i) => drawKpiCard(kpi, margin + i * (clinCardW + cardGap), clinCardW));
-  financialKpis.forEach((kpi, i) => drawKpiCard(kpi, finLabelX + i * (finCardW + cardGap), finCardW));
-
-  doc.setDrawColor(...lightGray);
-  doc.setLineWidth(0.4);
-  doc.line(margin + clinW + dividerW / 2, y, margin + clinW + dividerW / 2, y + cardH);
-
-  y += cardH + 7;
-
   // ── SCENARIO COMPARISON TABLE ──────────────────────────────────────────────
   doc.setFontSize(9);
   doc.setFont(undefined, "bold");
@@ -502,14 +467,15 @@ export async function exportToPDF({
   doc.setFont(undefined, "normal");
   doc.setTextColor(...slateGray);
   doc.text(
-    "Estimated annual impact. Col 2 deltas vs. Baseline; Col 3 deltas vs. Steripath® Implemented. Green = improvement, red = worse.",
+    "Col 2 deltas vs. Baseline; Col 3 deltas vs. Steripath® Implemented. Green = improvement, red = worse.",
     margin, y + 5,
   );
   y += 11;
 
   const tableRowDefs = [
     {
-      label: "Avoided Contamination Events",
+      label:    "Avoided Contamination Events",
+      sublabel: "False-positive cultures avoided vs. Pre-Steripath® Baseline",
       vals: {
         baseline: 0,
         current:  Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0)),
@@ -518,42 +484,53 @@ export async function exportToPDF({
       isCurrency: false, isRate: false, isAvoidance: true,
     },
     {
-      label: "Blended Contamination Rate",
+      label:    "Blended Contamination Rate",
+      sublabel: "Sc. 1 effective baseline; Sc. 2-3 weighted by utilization mix",
       vals: { baseline: baseline.blendedRate, current: current.blendedRate, best: best.blendedRate },
       isCurrency: false, isRate: true, isAvoidance: false,
     },
     {
-      label: "Bed Days Freed vs. Baseline",
+      label:    "Bed Days Freed",
+      sublabel: "Sc. 2: total freed vs. Sc. 1 · Sc. 3: total freed vs. Sc. 1 (delta vs. Sc. 2 in subtext)",
       vals: {
         baseline: 0,
         current:  current.bedDaysFreed,
-        best:     Math.max(0, (best.bedDaysFreed || 0) - (current.bedDaysFreed || 0)),
+        best:     best.bedDaysFreed,
       },
       isCurrency: false, isRate: false, isAvoidance: true,
     },
     {
-      label: "Cost of Contaminations",
+      label:    "Cost of Contaminations",
+      sublabel: "Direct cost burden from false-positive cultures",
       vals: { baseline: baseline.contaminationCost, current: current.contaminationCost, best: best.contaminationCost },
       isCurrency: true, isRate: false, isAvoidance: false,
     },
     {
-      label: "Device Investment",
-      vals: { baseline: baseline.deviceCost, current: current.deviceCost, best: best.deviceCost },
+      label:    "Device Investment",
+      sublabel: "Total device cost for the scenario",
+      vals: {
+        baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : null,
+        current:  current.deviceCost,
+        best:     best.deviceCost,
+      },
       isCurrency: true, isRate: false, isAvoidance: false,
     },
     {
-      label: "Total Hospital Cost",
+      label:    "Total Hospital Cost",
+      sublabel: "Contamination costs + device investment",
       vals: { baseline: baseline.totalCost, current: current.totalCost, best: best.totalCost },
       isCurrency: true, isRate: false, isAvoidance: false,
     },
     {
-      label: "Net Savings vs. Baseline",
+      label:    "Net Savings vs. Baseline",
+      sublabel: "Cost avoided relative to Pre-Steripath® Baseline, after device investment",
       vals: { baseline: 0, current: current.netSavings, best: best.netSavings },
       isCurrency: true, isRate: false, isAvoidance: true,
     },
   ];
 
   const fmtCell = (val, key, def) => {
+    if (val === null) return "—";
     if (key === "baseline" && def.isAvoidance) return "—";
     if (def.isRate)     return fmtP(val);
     if (def.isCurrency) return fmtCompact(val);
@@ -561,6 +538,7 @@ export async function exportToPDF({
   };
 
   const buildDeltaLabel = (cellVal, refVal, isCurrency, isRate, refLabel) => {
+    if (cellVal === null || refVal === null) return null;
     const cell  = Number(cellVal) || 0;
     const ref   = Number(refVal)  || 0;
     const delta = cell - ref;
@@ -574,7 +552,7 @@ export async function exportToPDF({
         ? fmtCompact(abs)
         : fmtN(Math.round(abs));
     const pctStr = !isRate && Math.abs(ref) > 0.5
-      ? ` (${sign}${Math.abs((delta / ref) * 100).toFixed(0)}%)`
+      ? ` / ${sign}${Math.abs((delta / ref) * 100).toFixed(0)}%`
       : "";
     return `${sign}${fmtAbs}${pctStr} vs. ${refLabel}`;
   };
@@ -608,14 +586,18 @@ export async function exportToPDF({
     ...activeScenarios.map((s) => fmtCell(def.vals[s.key], s.key, def)),
   ]);
 
-  const bodyCellH    = 9;
+  const bodyCellH    = 11;
   const deltaFromBot = 2.5;
   const valuePadTop  = 2;
   const labelColW    = 56;
   const dataColW     = (pageW - margin * 2 - labelColW) / activeScenarios.length;
 
+  // Store sublabels for didDrawCell
+  const sublabels = tableRowDefs.map((d) => d.sublabel || "");
+
   const colStyles = {
-    0: { cellWidth: labelColW, fontStyle: "bold", textColor: darkGray, halign: "left", valign: "middle" },
+    0: { cellWidth: labelColW, fontStyle: "bold", textColor: darkGray, halign: "left", valign: "top",
+         cellPadding: { top: 3, bottom: 3, left: 3, right: 2 } },
   };
   activeScenarios.forEach((_, i) => {
     colStyles[i + 1] = {
@@ -664,24 +646,38 @@ export async function exportToPDF({
     },
 
     didDrawCell: (data) => {
-      if (data.section === "body" && data.column.index > 0) {
-        const key   = `${data.row.index}-${data.column.index}`;
-        const delta = deltaCells.get(key);
-        if (!delta) return;
-        doc.setFontSize(5);
-        doc.setFont(undefined, "normal");
-        doc.setTextColor(...(delta.isGood ? green : red));
-        doc.text(
-          delta.text,
-          data.cell.x + data.cell.width / 2,
-          data.cell.y + data.cell.height - deltaFromBot,
-          { align: "center" },
-        );
+      if (data.section === "body") {
+        // Sublabel under row header (col 0)
+        if (data.column.index === 0) {
+          const sub = sublabels[data.row.index];
+          if (sub) {
+            doc.setFontSize(5);
+            doc.setFont(undefined, "normal");
+            doc.setTextColor(...slateGray);
+            const subLines = doc.splitTextToSize(sub, data.cell.width - 5);
+            doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 3.5);
+          }
+        }
+        // Delta label in data columns
+        if (data.column.index > 0) {
+          const key   = `${data.row.index}-${data.column.index}`;
+          const delta = deltaCells.get(key);
+          if (!delta) return;
+          doc.setFontSize(5);
+          doc.setFont(undefined, "normal");
+          doc.setTextColor(...(delta.isGood ? green : red));
+          doc.text(
+            delta.text,
+            data.cell.x + data.cell.width / 2,
+            data.cell.y + data.cell.height - deltaFromBot,
+            { align: "center" },
+          );
+        }
       }
     },
   });
 
-  // ── FOOTNOTE / DISCLOSURE + REFERENCES ────────────────────────────────────
+  // ── FOOTNOTE ───────────────────────────────────────────────────────────────
   const footnoteText =
     "This calculator provides illustrative cost avoidance and patient impact estimates based on user-entered information and assumptions derived from published literature, internal analyses, or other " +
     "external sources. The results are intended solely to assist healthcare professionals and decision-makers in evaluating potential economic and clinical considerations associated with the use of " +

@@ -12,6 +12,7 @@ import { MethodologySection } from "@/components/ROICalculator/MethodologySectio
 import { Footer } from "@/components/ROICalculator/Footer";
 import { AccountNameInput } from "@/components/ROICalculator/AccountNameInput";
 import { StudySelectionModal } from "@/components/ROICalculator/StudySelectionModal";
+import { acquireGraphToken, sendEmailViaGraph, getSignedInAccount } from "@/utils/graphMailSender";
 
 function Toggle({ checked, onChange, color = "bg-[#0842A6]" }) {
   return (
@@ -229,6 +230,7 @@ export default function ROICalculator() {
 
   const [isEmailingPDF, setIsEmailingPDF] = useState(false);
   const [showStudyModal, setShowStudyModal] = useState(false);
+  const [signedInEmail, setSignedInEmail] = useState(() => getSignedInAccount()?.username ?? null);
 
   const pdfInputs = {
     volume,
@@ -272,55 +274,41 @@ export default function ROICalculator() {
   // Opens the study selection modal
   const handleEmailPDF = () => setShowStudyModal(true);
 
-  // Called when the user confirms the modal (selectedStudies may be empty)
-  const handleEmailPDFConfirm = async (selectedStudies, emailBody) => {
-    setShowStudyModal(false);
+  // Called when the user confirms the modal
+  const handleEmailPDFConfirm = async (selectedStudies, emailBody, recipientEmail) => {
     setIsEmailingPDF(true);
     try {
+      console.log("[Email] Step 1: acquiring token...");
+      const accessToken = await acquireGraphToken();
+      console.log("[Email] Step 2: token acquired", !!accessToken);
+      const account = getSignedInAccount();
+      if (account) setSignedInEmail(account.username);
+
+      console.log("[Email] Step 3: generating PDF...");
       const { blob, fileName } = await exportToPDF({
         inputs: pdfInputs, calculations, showBestScenario, hospitalName, returnBlob: true,
       });
+      console.log("[Email] Step 4: PDF ready", fileName);
 
       const subject = `Steripath® Impact Analysis${hospitalName ? ` — ${hospitalName}` : ""}`;
 
-      const triggerDownload = (href, name) => {
-        const a = document.createElement("a");
-        a.href = href;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      };
-
-      // Download the executive summary PDF
-      const url = URL.createObjectURL(blob);
-      triggerDownload(url, fileName);
-      URL.revokeObjectURL(url);
-
-      // Download each selected study with a small stagger so the browser doesn't block them
-      selectedStudies.forEach((study, i) => {
-        setTimeout(() => triggerDownload(study.file, study.label + "." + study.type), (i + 1) * 400);
+      console.log("[Email] Step 5: sending via Graph API...");
+      await sendEmailViaGraph({
+        accessToken,
+        to: recipientEmail,
+        subject,
+        bodyText: emailBody,
+        pdfBlob: blob,
+        pdfName: fileName,
+        studies: selectedStudies,
       });
 
-      // Build the mailto body: draft email + attachment reminder
-      const attachmentNote = [
-        `--- Please attach before sending ---`,
-        `  • ${fileName}`,
-        ...selectedStudies.map((s) => `  • ${s.label}.${s.type}`),
-        `(Files have been downloaded to your computer)`,
-      ].join("\n");
-
-      const fullBody = `${emailBody}\n\n${attachmentNote}`;
-
-      setTimeout(
-        () => {
-          window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBody)}`;
-        },
-        (selectedStudies.length + 1) * 400 + 100
-      );
+      setShowStudyModal(false);
+      alert("Email sent successfully!");
     } catch (err) {
-      console.error("Error emailing PDF:", err);
-      alert("Unable to prepare email. Please try again.");
+      console.error("Error sending email — full error:", err);
+      console.error("Error name:", err?.name, "| message:", err?.message, "| code:", err?.errorCode);
+      alert(`Unable to send email: ${err?.message || err?.errorCode || JSON.stringify(err)}`);
     } finally {
       setIsEmailingPDF(false);
     }
@@ -368,11 +356,13 @@ export default function ROICalculator() {
       {showStudyModal && (
         <StudySelectionModal
           onConfirm={handleEmailPDFConfirm}
-          onClose={() => setShowStudyModal(false)}
+          onClose={() => { setShowStudyModal(false); setIsEmailingPDF(false); }}
           calculations={calculations}
           hospitalName={hospitalName}
           showBestScenario={showBestScenario}
           period={period}
+          isSending={isEmailingPDF}
+          signedInEmail={signedInEmail}
         />
       )}
       <Header
@@ -476,6 +466,7 @@ export default function ROICalculator() {
               calculations={calculations}
               showBestScenario={showBestScenario}
               isMobile={mobileView}
+              inputs={inputs}
             />
             <MethodologySection
               isMethodologyOpen={isMethodologyOpen}
