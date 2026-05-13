@@ -161,18 +161,18 @@ export async function exportToPDF({
     `Over ${period} ${period === 1 ? "month" : "months"}, implementing Steripath® at ${util} utilization reduces the ` +
     `contamination rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, which translates to the following results:`;
 
-  // Title — centered, bold, prominent
+  // Title — left-aligned, bold, prominent
   doc.setTextColor(...blue);
   doc.setFontSize(12);
   doc.setFont(undefined, "bold");
-  doc.text("EXECUTIVE SUMMARY", pageW / 2, y + 7, { align: "center" });
+  doc.text("EXECUTIVE SUMMARY", margin, y + 7);
 
-  // Sentence — centered, normal weight, smaller
+  // Sentence — left-aligned, normal weight, smaller
   doc.setTextColor(...darkGray);
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
   const summaryLines = doc.splitTextToSize(execPara, pageW - margin * 2);
-  doc.text(summaryLines, pageW / 2, y + 15, { align: "center" });
+  doc.text(summaryLines, margin, y + 15);
 
   y += 15 + summaryLines.length * 5.5 + 5;
 
@@ -210,17 +210,17 @@ export async function exportToPDF({
   ];
 
   const cardGap  = 3;
-  const cardH    = 42;
+  const cardH    = 52;
   const totalW   = pageW - margin * 2;
   const iconSzMM = 8;     // icon box size in mm
   const iconTopMM = 3;    // from card top to icon top
   // Fixed value Y offset (from rowY) — same for ALL cards so values align on y-axis
-  const fixedValueOffsetMM = cardH * 0.72;        // ~30mm from card top
-  const fixedSubOffsetMM   = fixedValueOffsetMM + 5.5;
+  const fixedValueOffsetMM = cardH * 0.68;
+  const fixedSubOffsetMM   = fixedValueOffsetMM + 7;
   // Label block centered halfway between icon bottom and value Y
   const iconBottomMM   = iconTopMM + iconSzMM;
   const labelCenterMM  = (iconBottomMM + fixedValueOffsetMM) / 2;
-  const labelLineH     = 3.8;
+  const labelLineH     = 4.5;
 
   const drawKpiCard = (kpi, cx, cw, rowY) => {
     // Card background
@@ -240,7 +240,7 @@ export async function exportToPDF({
 
     // Label — white, block centered halfway between icon bottom and value
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setFont(undefined, "normal");
     const labelLines = doc.splitTextToSize(kpi.label, cw - 4);
     const labelBlockH = (labelLines.length - 1) * labelLineH;
@@ -251,7 +251,7 @@ export async function exportToPDF({
 
     // Value — fixed Y for all cards (ensures y-axis alignment)
     const valueY = rowY + fixedValueOffsetMM;
-    const valFontSize = kpi.value.length > 10 ? 11 : kpi.value.length > 7 ? 13 : 15;
+    const valFontSize = kpi.value.length > 10 ? 14 : kpi.value.length > 7 ? 17 : 20;
     doc.setFontSize(valFontSize);
     doc.setFont(undefined, "bold");
     doc.setTextColor(255, 255, 255);
@@ -259,7 +259,7 @@ export async function exportToPDF({
 
     // Sublabel — below value (only for 3 clinical cards)
     if (kpi.sublabel) {
-      doc.setFontSize(6);
+      doc.setFontSize(8);
       doc.setFont(undefined, "normal");
       doc.setTextColor(200, 220, 255);
       doc.text(kpi.sublabel, cx + cw / 2, rowY + fixedSubOffsetMM, { align: "center" });
@@ -267,7 +267,7 @@ export async function exportToPDF({
   };
 
   // Clinical Results row
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
   doc.text("Clinical Results", pageW / 2, y + 5, { align: "center" });
@@ -278,14 +278,15 @@ export async function exportToPDF({
   y += cardH + 7;
 
   // Financial Results row
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
   doc.text("Financial Results", pageW / 2, y + 5, { align: "center" });
   y += 9;
 
-  const finCardW = (totalW - cardGap * (financialKpis.length - 1)) / financialKpis.length;
-  financialKpis.forEach((kpi, i) => drawKpiCard(kpi, margin + i * (finCardW + cardGap), finCardW, y));
+  const finTotalW = clinCardW * financialKpis.length + cardGap * (financialKpis.length - 1);
+  const finStartX = margin + (totalW - finTotalW) / 2;
+  financialKpis.forEach((kpi, i) => drawKpiCard(kpi, finStartX + i * (clinCardW + cardGap), clinCardW, y));
   y += cardH + 4;
 
   // Page 1 footer
@@ -312,7 +313,7 @@ export async function exportToPDF({
   y = 17;
 
   // ── SCENARIO COMPARISON TABLE ──────────────────────────────────────────────
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
   doc.text("Scenario Comparison", margin, y);
@@ -433,14 +434,14 @@ export async function exportToPDF({
   ]);
 
   const bodyCellH    = 13;
-  const deltaFromBot = 2.5;
+  const deltaFromBot = 3.0;
   const valuePadTop  = 2;
   const labelColW    = 56;
   const dataColW     = (pageW - margin * 2 - labelColW) / activeScenarios.length;
   const sublabels    = tableRowDefs.map((d) => d.sublabel || "");
 
   const outColStyles = {
-    0: { cellWidth: labelColW, fontStyle: "bold", textColor: darkGray, halign: "left", valign: "top",
+    0: { cellWidth: labelColW, fontStyle: "bold", fontSize: 9, textColor: darkGray, halign: "left", valign: "top",
          cellPadding: { top: 3, bottom: 3, left: 3, right: 2 } },
   };
   activeScenarios.forEach((_, i) => {
@@ -461,13 +462,13 @@ export async function exportToPDF({
       fillColor: blue,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 7,
+      fontSize: 9,
       halign: "center",
       valign: "middle",
       minCellHeight: 10,
     },
     bodyStyles: {
-      fontSize: 8,
+      fontSize: 10,
       fontStyle: "bold",
       textColor: darkGray,
       minCellHeight: bodyCellH,
@@ -494,18 +495,18 @@ export async function exportToPDF({
         if (data.column.index === 0) {
           const sub = sublabels[data.row.index];
           if (sub) {
-            doc.setFontSize(6);
+            doc.setFontSize(7.5);
             doc.setFont(undefined, "normal");
             doc.setTextColor(...slateGray);
             const subLines = doc.splitTextToSize(sub, data.cell.width - 5);
-            doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 3.5);
+            doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 4.0);
           }
         }
         if (data.column.index > 0) {
           const key   = `${data.row.index}-${data.column.index}`;
           const delta = deltaCells.get(key);
           if (!delta) return;
-          doc.setFontSize(6);
+          doc.setFontSize(8);
           doc.setFont(undefined, "normal");
           doc.setTextColor(...(delta.isGood ? green : red));
           doc.text(
@@ -519,7 +520,36 @@ export async function exportToPDF({
     },
   });
 
-  y = doc.lastAutoTable.finalY + 8;
+  const _scenFinalY = doc.lastAutoTable.finalY;
+
+  // Footnote strings defined here so we can compute height for vertical centering below
+  const footnoteDisclaimer =
+    "This calculator provides illustrative cost avoidance and patient impact estimates based on user-entered information and assumptions derived from published literature, internal analyses, or " +
+    "other external sources. The results are intended solely to assist healthcare professionals and decision-makers in evaluating potential economic and clinical considerations associated with the " +
+    "use of the Steripath® Initial Specimen Diversion Device® platform (ISDD®). Patient impact figures are modeled estimates and do not constitute a guarantee of financial performance or clinical outcomes.";
+  const footnoteRefs =
+    "1. Klucher J, Davis K, Lakkad M, Painter JT, Dare RK. Infect Control Hosp Epidemiol. 2022;43(3):291-297. " +
+    "2. Geisler BP, et al. J Hosp Infect. 2019;102(4):438-444. " +
+    "3. Skoglund E, et al. J Clin Microbiol. 2019;57(1):e01015-18. " +
+    "4. Alahmadi YM, et al. J Hosp Infect. 2011;77(3):233-6. " +
+    "5. Gander RM, et al. J Clin Microbiol. 2009;47(4):1021-4. " +
+    "6. Zwang O, Albert RK. J Hosp Med. 2006;1(5):272-6. " +
+    "7. Little JR, et al. Am J Med. 1999;107(2):119-25. " +
+    "8. Surdulescu S, et al. Clin Perform Qual Health Care. 1998;6(2):60-2. " +
+    "9. Bates DW, et al. JAMA. 1991;265(3):365-9. " +
+    "10. Dunagan WC, et al. Am J Med. 1989;87(3):253-9. " +
+    "*Adjusted by 40% cost-to-charge ratio and CPI inflation to June 2019.";
+
+  // Pre-compute footnote height so we can vertically center the input tables
+  const _fnFullW = pageW - margin * 2;
+  doc.setFontSize(5);
+  const _fnH = (doc.splitTextToSize(footnoteDisclaimer, _fnFullW).length + 1 +
+                doc.splitTextToSize(footnoteRefs, _fnFullW).length) * 2.0 + 2;
+  const _fnAnchorY = pageH - _fnH - 8;
+  // Estimate input block height: 4mm for title row + max of gen/scen table heights
+  const _inputRows  = isBlended ? 4 : 6;
+  const _estBlockH  = 4 + Math.max(8 + 4 * 6, 10 + _inputRows * 6);
+  y = _scenFinalY + Math.max(5, (_fnAnchorY - _scenFinalY - _estBlockH) / 2);
 
   // ── SIDE-BY-SIDE: General Assumptions (left) + Scenario Inputs (right) ─────
   const genW      = 82;
@@ -651,7 +681,7 @@ export async function exportToPDF({
   // ── Equal-height calc ──────────────────────────────────────────────────────
   const GEN_HEADER_H  = 8;
   const SCEN_HEADER_H = 10;
-  const BASE_BODY_H   = 7;
+  const BASE_BODY_H   = 6;
 
   const genNaturalH  = GEN_HEADER_H  + genAssumpRows.length * BASE_BODY_H;
   const scenNaturalH = SCEN_HEADER_H + inputRowDefs.length * BASE_BODY_H;
@@ -669,7 +699,7 @@ export async function exportToPDF({
       fillColor: blue,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 6.5,
+      fontSize: 9,
       halign: "center",
       valign: "middle",
       minCellHeight: GEN_HEADER_H,
@@ -682,8 +712,8 @@ export async function exportToPDF({
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { cellWidth: 54, halign: "left",  fontStyle: "normal", cellPadding: { left: 3, top: 2, bottom: 2, right: 2 } },
-      1: { cellWidth: 28, halign: "right", fontStyle: "bold",   cellPadding: { left: 2, top: 2, bottom: 2, right: 4 } },
+      0: { cellWidth: 54, halign: "left",  fontStyle: "bold",   cellPadding: { left: 3, top: 2, bottom: 2, right: 2 } },
+      1: { cellWidth: 28, halign: "right", fontStyle: "normal", cellPadding: { left: 2, top: 2, bottom: 2, right: 4 } },
     },
     margin: { left: margin, right: pageW - margin - genW },
   });
@@ -711,7 +741,7 @@ export async function exportToPDF({
       fillColor: blue,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 6.5,
+      fontSize: 9,
       halign: "center",
       valign: "middle",
       minCellHeight: SCEN_HEADER_H,
@@ -738,27 +768,9 @@ export async function exportToPDF({
   });
   const scenFinalY = doc.lastAutoTable.finalY;
 
-  y = Math.max(genFinalY, scenFinalY) + 8;
+  y = Math.max(genFinalY, scenFinalY) + 4;
 
   // ── FOOTNOTE — full width, positioned after tables, consistent font ─────────
-  const footnoteDisclaimer =
-    "This calculator provides illustrative cost avoidance and patient impact estimates based on user-entered information and assumptions derived from published literature, internal analyses, or " +
-    "other external sources. The results are intended solely to assist healthcare professionals and decision-makers in evaluating potential economic and clinical considerations associated with the " +
-    "use of the Steripath® Initial Specimen Diversion Device® platform (ISDD®). Patient impact figures are modeled estimates and do not constitute a guarantee of financial performance or clinical outcomes.";
-
-  const footnoteRefs =
-    "1. Klucher J, Davis K, Lakkad M, Painter JT, Dare RK. Infect Control Hosp Epidemiol. 2022;43(3):291-297. " +
-    "2. Geisler BP, et al. J Hosp Infect. 2019;102(4):438-444. " +
-    "3. Skoglund E, et al. J Clin Microbiol. 2019;57(1):e01015-18. " +
-    "4. Alahmadi YM, et al. J Hosp Infect. 2011;77(3):233-6. " +
-    "5. Gander RM, et al. J Clin Microbiol. 2009;47(4):1021-4. " +
-    "6. Zwang O, Albert RK. J Hosp Med. 2006;1(5):272-6. " +
-    "7. Little JR, et al. Am J Med. 1999;107(2):119-25. " +
-    "8. Surdulescu S, et al. Clin Perform Qual Health Care. 1998;6(2):60-2. " +
-    "9. Bates DW, et al. JAMA. 1991;265(3):365-9. " +
-    "10. Dunagan WC, et al. Am J Med. 1989;87(3):253-9. " +
-    "*Adjusted by 40% cost-to-charge ratio and CPI inflation to June 2019.";
-
   const fullWidth = pageW - margin * 2;
 
   doc.setFontSize(5);
@@ -767,7 +779,7 @@ export async function exportToPDF({
 
   const disclaimerLines = doc.splitTextToSize(footnoteDisclaimer, fullWidth);
   const refLines        = doc.splitTextToSize(footnoteRefs, fullWidth);
-  const lineH = 2.5;
+  const lineH = 2.0;
   const footnoteH = (disclaimerLines.length + 1 + refLines.length) * lineH + 2;
 
   // If footnote would overlap the tables, push it just below; otherwise anchor near bottom
