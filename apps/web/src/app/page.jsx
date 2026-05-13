@@ -371,8 +371,6 @@ export default function ROICalculator() {
         isGeneratingPDF={isGeneratingPDF}
         onEmailPDF={handleEmailPDF}
         isEmailingPDF={isEmailingPDF}
-        mobileView={mobileView}
-        onToggleMobileView={() => setMobileView((v) => !v)}
         hospitalName={hospitalName}
       />
 
@@ -476,82 +474,7 @@ export default function ROICalculator() {
           </>
         );
 
-        return mobileView ? (
-          <main className="py-10 flex justify-center bg-[#CBCFD3] min-h-screen">
-            {/* iPhone 15 Pro shell */}
-            <div className="relative flex-shrink-0" style={{ width: 393 }}>
-
-              {/* Side buttons — left: mute + volume */}
-              <div className="absolute rounded-l-[3px]" style={{ left: -4, top: 108, width: 4, height: 28, background: 'linear-gradient(to right, #6b7280, #9ca3af)' }} />
-              <div className="absolute rounded-l-[3px]" style={{ left: -4, top: 154, width: 4, height: 60, background: 'linear-gradient(to right, #6b7280, #9ca3af)' }} />
-              <div className="absolute rounded-l-[3px]" style={{ left: -4, top: 228, width: 4, height: 60, background: 'linear-gradient(to right, #6b7280, #9ca3af)' }} />
-
-              {/* Side button — right: power */}
-              <div className="absolute rounded-r-[3px]" style={{ right: -4, top: 178, width: 4, height: 80, background: 'linear-gradient(to left, #6b7280, #9ca3af)' }} />
-
-              {/* Outer titanium frame */}
-              <div
-                className="w-full overflow-hidden"
-                style={{
-                  borderRadius: 54,
-                  padding: 3,
-                  background: 'linear-gradient(145deg, #8e8e93 0%, #636366 30%, #3a3a3c 60%, #8e8e93 100%)',
-                  boxShadow: '0 40px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08) inset',
-                }}
-              >
-                {/* Screen glass */}
-                <div className="relative overflow-hidden bg-[#F2F6F7]" style={{ borderRadius: 52 }}>
-
-                  {/* Dynamic Island */}
-                  <div
-                    className="absolute z-20 bg-black"
-                    style={{ top: 12, left: '50%', transform: 'translateX(-50%)', width: 126, height: 37, borderRadius: 20 }}
-                  />
-
-                  {/* Status bar */}
-                  <div className="relative z-10 flex items-end justify-between px-8 pb-1" style={{ height: 59 }}>
-                    <span className="text-[15px] font-semibold text-slate-900 tracking-tight">9:41</span>
-                    <div className="flex items-center gap-1.5">
-                      {/* Signal bars */}
-                      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor" className="text-slate-900">
-                        <rect x="0" y="6" width="3" height="6" rx="0.5"/>
-                        <rect x="4.5" y="4" width="3" height="8" rx="0.5"/>
-                        <rect x="9" y="2" width="3" height="10" rx="0.5"/>
-                        <rect x="13.5" y="0" width="3" height="12" rx="0.5" opacity="0.3"/>
-                      </svg>
-                      {/* WiFi */}
-                      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" className="text-slate-900">
-                        <path d="M8 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/>
-                        <path d="M8 6C5.79 6 3.81 6.9 2.34 8.34L1 7a8.97 8.97 0 0114 0l-1.34 1.34C12.19 6.9 10.21 6 8 6z"/>
-                        <path d="M8 3C4.69 3 1.73 4.35-.01 6.6L1.4 8a7.97 7.97 0 0113.2 0L16.01 6.6C14.27 4.35 11.31 3 8 3z" opacity="0.4"/>
-                      </svg>
-                      {/* Battery */}
-                      <div className="flex items-center gap-0.5">
-                        <div className="relative border-2 border-slate-900 rounded-[3px]" style={{ width: 24, height: 12 }}>
-                          <div className="absolute inset-[1px] right-[3px] bg-slate-900 rounded-[1px]" style={{ right: 1 }} />
-                        </div>
-                        <div className="bg-slate-900 rounded-r-[2px]" style={{ width: 2, height: 5 }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Scrollable content */}
-                  <div className="overflow-y-auto" style={{ maxHeight: 727 }}>
-                    <div className="px-4 pb-4 space-y-5">
-                      {inputContent}
-                      {outputContent}
-                    </div>
-                  </div>
-
-                  {/* Home indicator */}
-                  <div className="flex items-center justify-center bg-[#F2F6F7]" style={{ height: 34 }}>
-                    <div className="bg-slate-900 rounded-full opacity-30" style={{ width: 134, height: 5 }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </main>
-        ) : (
+        return (
           <main className="max-w-[1600px] mx-auto px-6 py-8 space-y-8">
             {inputContent}
             {outputContent}
@@ -560,8 +483,7 @@ export default function ROICalculator() {
       })()}
 
 
-      {!mobileView && (
-        <button
+      <button
           onClick={() => {
             if (scrolledPastInputs) {
               window.scrollTo({ top: 0, behavior: "smooth" });
@@ -575,7 +497,6 @@ export default function ROICalculator() {
         >
           {scrolledPastInputs ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
         </button>
-      )}
 
       <div className="max-w-[1600px] mx-auto px-6 pb-2">
         <div className="flex items-center gap-3 justify-end">

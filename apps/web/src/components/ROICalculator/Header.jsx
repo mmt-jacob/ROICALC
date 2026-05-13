@@ -1,43 +1,27 @@
-import { Download, Smartphone, Monitor, BarChart2, Mail } from "lucide-react";
+import { Download, BarChart2, Mail } from "lucide-react";
 
 export function Header({
   onGeneratePDF,
   isGeneratingPDF,
   onEmailPDF,
   isEmailingPDF,
-  mobileView,
-  onToggleMobileView,
   hospitalName,
 }) {
   return (
     <header className="bg-white border-b border-[#CBCFD3] sticky top-0 z-50">
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <img
-              src="/mmt-logo.png"
-              alt="MMT Logo"
-              className="h-8 w-auto object-contain"
-            />
-            <h1 className="text-xl font-bold tracking-tight text-[#151F26]">
-              Steripath® Impact Analysis
-              {hospitalName && (
-                <span className="font-normal text-[#636D78]"> — {hospitalName}</span>
-              )}
-            </h1>
-          </div>
-          <button
-            onClick={onToggleMobileView}
-            title={mobileView ? "Switch to desktop view" : "Preview mobile view"}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-              mobileView
-                ? "bg-[#0B2D71] text-white border-[#0B2D71] hover:bg-[#0842A6]"
-                : "bg-white text-[#636D78] border-[#CBCFD3] hover:bg-[#F2F6F7] hover:text-[#151F26]"
-            }`}
-          >
-            {mobileView ? <Monitor size={15} /> : <Smartphone size={15} />}
-            {mobileView ? "Desktop" : "Mobile"}
-          </button>
+        <div className="flex items-center gap-3">
+          <img
+            src="/mmt-logo.png"
+            alt="MMT Logo"
+            className="h-8 w-auto object-contain"
+          />
+          <h1 className="text-xl font-bold tracking-tight text-[#151F26]">
+            Steripath® Impact Analysis
+            {hospitalName && (
+              <span className="font-normal text-[#636D78]"> — {hospitalName}</span>
+            )}
+          </h1>
         </div>
 
         <div className="flex items-center gap-3">
