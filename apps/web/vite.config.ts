@@ -26,7 +26,7 @@ export default defineConfig({
   },
   clearScreen: false,
   server: {
-    port: 4000,
+    port: 4002,
     hmr: {
       overlay: false,
     },

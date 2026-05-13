@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { X, FileText, FileType, Mail } from "lucide-react";
+import { X, FileText, FileType, Mail, Send } from "lucide-react";
 
 export const STUDIES = [
   {
@@ -30,14 +30,13 @@ function fmtN(n) {
 }
 
 function buildDraft({ calculations, hospitalName, showBestScenario, period }) {
-  const { baseline, current, best } = calculations;
+  const { baseline, current } = calculations;
 
   const contamAvoided = Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0));
   const costAvoidance = Math.max(0, (baseline.totalCost || 0) - (current.totalCost || 0));
   const bedDays = Math.max(0, current.bedDaysFreed || 0);
   const mortalityReduction = Math.round(contamAvoided * 0.034);
 
-  // Payback: incremental device investment vs gross contamination savings
   const baselineDev = baseline.deviceCost || 0;
   const steripathDev = current.deviceCost || 0;
   const deviceInvestment = Math.max(0, steripathDev - baselineDev) || steripathDev;
@@ -79,8 +78,11 @@ export function StudySelectionModal({
   hospitalName,
   showBestScenario,
   period,
+  isSending,
+  signedInEmail,
 }) {
   const [selected, setSelected] = useState(new Set());
+  const [recipientEmail, setRecipientEmail] = useState("");
 
   const initialDraft = useMemo(
     () => buildDraft({ calculations, hospitalName, showBestScenario, period }),
@@ -105,6 +107,7 @@ export function StudySelectionModal({
   };
 
   const selectedStudies = STUDIES.filter((s) => selected.has(s.id));
+  const canSend = recipientEmail.trim().length > 0 && !isSending;
 
   return (
     <div
@@ -117,7 +120,11 @@ export function StudySelectionModal({
         <div className="px-6 py-4 border-b border-[#CBCFD3] flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-base font-bold text-[#151F26]">Email PDF</h2>
-            <p className="text-sm text-[#636D78] mt-0.5">Review the draft email and optionally attach supporting studies</p>
+            <p className="text-sm text-[#636D78] mt-0.5">
+              {signedInEmail
+                ? `Sending as ${signedInEmail}`
+                : "Sign in with Microsoft to send directly from your Outlook"}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -130,10 +137,24 @@ export function StudySelectionModal({
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
 
+          {/* To field */}
+          <div>
+            <label className="text-xs font-semibold text-[#636D78] uppercase tracking-wider mb-2 block">
+              To
+            </label>
+            <input
+              type="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder="recipient@hospital.com"
+              className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10"
+            />
+          </div>
+
           {/* Draft email */}
           <div>
             <p className="text-xs font-semibold text-[#636D78] uppercase tracking-wider mb-2">
-              Draft Email
+              Email Body
             </p>
             <textarea
               value={emailBody}
@@ -142,9 +163,6 @@ export function StudySelectionModal({
               className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-3 resize-y focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10 leading-relaxed font-mono"
               spellCheck
             />
-            <p className="text-[11px] text-[#9AA1AA] mt-1.5">
-              This will be pre-filled in the email body. Edit as needed before sending.
-            </p>
           </div>
 
           {/* Studies */}
@@ -196,16 +214,27 @@ export function StudySelectionModal({
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-medium text-[#636D78] border border-[#CBCFD3] bg-white hover:bg-[#F2F6F7] transition-colors"
           >
-            Cancel
+            {isSending ? "Abort" : "Cancel"}
           </button>
           <button
-            onClick={() => onConfirm(selectedStudies, emailBody)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#0842A6] hover:bg-[#0B2D71] transition-colors shadow-sm"
+            onClick={() => onConfirm(selectedStudies, emailBody, recipientEmail)}
+            disabled={!canSend}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#0842A6] hover:bg-[#0B2D71] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Mail size={15} />
-            {selectedStudies.length > 0
-              ? `Download & Email (${1 + selectedStudies.length} files)`
-              : "Download & Email PDF"}
+            {isSending ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Sending…
+              </>
+            ) : (
+              <>
+                <Send size={15} />
+                {signedInEmail ? "Send via Outlook" : "Sign in & Send"}
+              </>
+            )}
           </button>
         </div>
       </div>
