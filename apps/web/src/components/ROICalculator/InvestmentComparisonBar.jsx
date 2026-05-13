@@ -92,7 +92,7 @@ export default function InvestmentComparisonBar({
                 {formatCurrency(additionalRatio)}
               </p>
               <p className="text-sm text-[#636D78] mt-0.5">
-                cost avoided per additional $1 compared to initial Steripath Implementation
+                cost avoided per additional $1 invested compared to initial Steripath Implementation
               </p>
             </>
           ) : (
