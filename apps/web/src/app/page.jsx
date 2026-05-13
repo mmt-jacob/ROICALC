@@ -361,6 +361,7 @@ export default function ROICalculator() {
           hospitalName={hospitalName}
           showBestScenario={showBestScenario}
           period={period}
+          inputs={pdfInputs}
           isSending={isEmailingPDF}
           signedInEmail={signedInEmail}
         />
@@ -466,7 +467,7 @@ export default function ROICalculator() {
               calculations={calculations}
               showBestScenario={showBestScenario}
               isMobile={mobileView}
-              inputs={inputs}
+              inputs={pdfInputs}
             />
             <MethodologySection
               isMethodologyOpen={isMethodologyOpen}

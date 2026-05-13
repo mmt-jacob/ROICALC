@@ -29,7 +29,7 @@ function fmtN(n) {
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
 
-function buildDraft({ calculations, hospitalName, showBestScenario, period }) {
+function buildDraft({ calculations, hospitalName, showBestScenario, period, inputs }) {
   const { baseline, current } = calculations;
 
   const contamAvoided = Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0));
@@ -48,10 +48,13 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period }) {
       : null;
 
   const facilityPhrase = hospitalName ? `for ${hospitalName}` : "for your facility";
+  const utilPct = inputs?.steripathUtilization != null
+    ? `${Number(inputs.steripathUtilization).toFixed(0)}%`
+    : "current";
 
   let draft = `Hi,\n\n`;
   draft += `I wanted to share the results of a Steripath® Impact Analysis ${facilityPhrase}.\n\n`;
-  draft += `Based on the analysis, implementing Steripath® at current utilization is estimated to deliver the following annual outcomes:\n\n`;
+  draft += `Based on the analysis, implementing Steripath® at ${utilPct} utilization is estimated to deliver the following annual outcomes:\n\n`;
   draft += `  • Contaminations avoided: ${fmtN(contamAvoided)} events\n`;
   draft += `  • Net cost avoidance: ${fmt$(costAvoidance)}\n`;
   draft += `  • Bed days freed: ${fmtN(bedDays)}\n`;
@@ -78,6 +81,7 @@ export function StudySelectionModal({
   hospitalName,
   showBestScenario,
   period,
+  inputs,
   isSending,
   signedInEmail,
 }) {
@@ -85,7 +89,7 @@ export function StudySelectionModal({
   const [recipientEmail, setRecipientEmail] = useState("");
 
   const initialDraft = useMemo(
-    () => buildDraft({ calculations, hospitalName, showBestScenario, period }),
+    () => buildDraft({ calculations, hospitalName, showBestScenario, period, inputs }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
