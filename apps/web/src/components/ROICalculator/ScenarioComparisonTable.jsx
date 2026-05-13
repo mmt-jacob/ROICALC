@@ -79,12 +79,13 @@ function deltaColor(cellVal, refVal, isSigned, isAvoidance, isRate) {
 
 function MetricRow({
   label, sublabel, values, rowIndex,
-  isSigned, isCurrency, isRate, isAvoidance,
+  isSigned, isCurrency, isRate, isAvoidance, hideBaseline,
   activeScenarios, isMobile,
   suppressDeltas,
 }) {
   const fmt = (val, key) => {
     if (val === null) return "—";
+    if (hideBaseline && key === "baseline") return "—";
     if ((key === "baseline" && isSigned) || (key === "baseline" && isAvoidance)) return "—";
     if (isCurrency && isSigned) return signedCurrency(val);
     if (!isCurrency && isSigned) return signedNumber(val);
@@ -230,12 +231,13 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
       label: "Device Investment",
       sublabel: "Total device cost",
       values: {
-        baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : null,
+        baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : 0,
         current: current.deviceCost,
         best: best.deviceCost,
       },
       isSigned: false,
       isCurrency: true,
+      hideBaseline: !inputs.baselineHasAltProduct,
     },
     {
       label: "Total Hospital Cost",

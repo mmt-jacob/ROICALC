@@ -356,11 +356,12 @@ export async function exportToPDF({
       label:    "Device Investment",
       sublabel: "Total device cost",
       vals: {
-        baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : null,
+        baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : 0,
         current:  current.deviceCost,
         best:     best.deviceCost,
       },
       isCurrency: true, isRate: false, isAvoidance: false,
+      hideBaseline: !inputs.baselineHasAltProduct,
     },
     {
       label:    "Total Hospital Cost",
@@ -378,6 +379,7 @@ export async function exportToPDF({
 
   const fmtCell = (val, key, def) => {
     if (val === null) return "—";
+    if (def.hideBaseline && key === "baseline") return "—";
     if (key === "baseline" && def.isAvoidance) return "—";
     if (def.isRate)     return fmtP(val);
     if (def.isCurrency) return fmtCompact(val);
