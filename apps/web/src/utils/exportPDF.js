@@ -310,7 +310,7 @@ export async function exportToPDF({
     doc.text(hospitalName, pageW - margin, 8, { align: "right" });
   }
 
-  y = 17;
+  y = 20;
 
   // ── SCENARIO COMPARISON TABLE ──────────────────────────────────────────────
   doc.setFontSize(10);
