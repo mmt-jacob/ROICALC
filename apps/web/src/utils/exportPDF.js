@@ -222,19 +222,22 @@ export async function exportToPDF({
     { label: "Antibiotic Treatment Days Avoided",value: fmtN(Math.round(antibioticDays)),          icon: iPill,     sublabel: "contaminations avoided × 1 day" },
   ];
   const financialKpis = [
-    { label: "Net Cost Avoidance", value: fmtCompact(current.netSavings), icon: iDollar },
+    { label: "Net Cost Avoidance", value: "$" + Math.round((Number(current.netSavings) || 0) / 1000) + "K", icon: iDollar },
     { label: "Payback Period",     value: paybackLabel,                   icon: iClock  },
   ];
 
   const cardGap  = 3;
   const cardH    = 42;
   const totalW   = pageW - margin * 2;
-  const iconSzMM = 10;    // icon box size in mm
+  const iconSzMM = 8;     // icon box size in mm
   const iconTopMM = 3;    // from card top to icon top
-  const labelTopMM = iconTopMM + iconSzMM + 3;   // label starts 3mm below icon = 16mm from top
   // Fixed value Y offset (from rowY) — same for ALL cards so values align on y-axis
   const fixedValueOffsetMM = cardH * 0.72;        // ~30mm from card top
-  const fixedSubOffsetMM   = fixedValueOffsetMM + 5.5;  // ~35.5mm from card top
+  const fixedSubOffsetMM   = fixedValueOffsetMM + 5.5;
+  // Label block centered halfway between icon bottom and value Y
+  const iconBottomMM   = iconTopMM + iconSzMM;
+  const labelCenterMM  = (iconBottomMM + fixedValueOffsetMM) / 2;
+  const labelLineH     = 3.8;
 
   const drawKpiCard = (kpi, cx, cw, rowY) => {
     // Card background
@@ -252,13 +255,15 @@ export async function exportToPDF({
       doc.addImage(kpi.icon, "PNG", iconX + 1, iconY + 1, iconSzMM - 2, iconSzMM - 2);
     }
 
-    // Label — white, centered, below icon
+    // Label — white, block centered halfway between icon bottom and value
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(6.5);
     doc.setFont(undefined, "normal");
     const labelLines = doc.splitTextToSize(kpi.label, cw - 4);
+    const labelBlockH = (labelLines.length - 1) * labelLineH;
+    const labelStartY = rowY + labelCenterMM - labelBlockH / 2;
     labelLines.forEach((line, li) => {
-      doc.text(line, cx + cw / 2, rowY + labelTopMM + li * 3.8, { align: "center" });
+      doc.text(line, cx + cw / 2, labelStartY + li * labelLineH, { align: "center" });
     });
 
     // Value — fixed Y for all cards (ensures y-axis alignment)
