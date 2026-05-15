@@ -262,7 +262,7 @@ export default function ROICalculator() {
   const handleGeneratePDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      await exportToPDF({ inputs: pdfInputs, calculations, showBestScenario, hospitalName });
+      await exportToPDF({ inputs: pdfInputs, calculations, showBestScenario, hospitalName, compareA, compareB });
     } catch (err) {
       console.error("Error generating PDF:", err);
       alert("Unable to generate PDF. Please try again or contact support if the issue persists.");
@@ -286,7 +286,7 @@ export default function ROICalculator() {
 
       console.log("[Email] Step 3: generating PDF...");
       const { blob, fileName } = await exportToPDF({
-        inputs: pdfInputs, calculations, showBestScenario, hospitalName, returnBlob: true,
+        inputs: pdfInputs, calculations, showBestScenario, hospitalName, returnBlob: true, compareA, compareB,
       });
       console.log("[Email] Step 4: PDF ready", fileName);
 
@@ -466,6 +466,8 @@ export default function ROICalculator() {
               showBestScenario={showBestScenario}
               isMobile={mobileView}
               inputs={pdfInputs}
+              compareA={compareA}
+              compareB={compareB}
             />
             <MethodologySection
               isMethodologyOpen={isMethodologyOpen}

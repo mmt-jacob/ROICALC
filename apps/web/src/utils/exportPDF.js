@@ -50,6 +50,8 @@ export async function exportToPDF({
   showBestScenario = true,
   hospitalName = "",
   returnBlob = false,
+  compareA = "baseline",
+  compareB = "current",
 }) {
   const jspdf = await loadJsPDF();
   const { jsPDF } = jspdf;
@@ -105,19 +107,22 @@ export async function exportToPDF({
   const rateMode  = inputs.globalRateMode || "blended";
   const isBlended = rateMode === "blended";
 
-  const contamAvoided      = Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0));
+  const scenCalcA = calculations[compareA] || calculations.baseline;
+  const scenCalcB = calculations[compareB] || calculations.current;
+  const contamAvoided      = Math.max(0, (scenCalcA.contaminations || 0) - (scenCalcB.contaminations || 0));
   const mortalityReduction = Math.round(contamAvoided * 0.034);
   const akiAvoided         = contamAvoided * 0.134;
   const antibioticDays     = contamAvoided * 1;
 
-  const SCENARIO_DEFS = [
-    { key: "baseline", label: "Pre-Steripath®\nBaseline" },
-    { key: "current",  label: "Steripath®\nImplemented" },
-    { key: "best",     label: "Increased\nCompliance" },
-  ];
-  const activeScenarios = SCENARIO_DEFS.filter(
-    (s) => s.key !== "best" || showBestScenario,
-  );
+  const SCENARIO_DEFS = {
+    baseline: { key: "baseline", label: "Pre-Steripath®\nBaseline" },
+    current:  { key: "current",  label: "Steripath®\nImplemented" },
+    best:     { key: "best",     label: "Increased\nCompliance" },
+  };
+  const scenA = SCENARIO_DEFS[compareA] || SCENARIO_DEFS.baseline;
+  const scenB = SCENARIO_DEFS[compareB] || SCENARIO_DEFS.current;
+  // activeScenarios still used by input tables to know which scenario columns to show
+  const activeScenarios = [scenA, scenB];
 
   // ── PAGE 1: HEADER ─────────────────────────────────────────────────────────
   const headerH = hospitalName ? 38 : 32;
@@ -155,7 +160,11 @@ export async function exportToPDF({
 
   const util           = fmtP(inputs.steripathUtilization, 0);
   const period         = Number(inputs.period) || 12;
-  const paybackRounded = Math.round(current.paybackMonths ?? 0);
+  const grossContamSavings = (scenCalcA.contaminationCost || 0) - (scenCalcB.contaminationCost || 0);
+  const pdfPaybackMonths   = (scenCalcB.deviceCost || 0) > 0 && grossContamSavings > 0
+    ? (scenCalcB.deviceCost / grossContamSavings) * period : null;
+  const pdfPaybackRounded  = Math.round(pdfPaybackMonths ?? 0);
+  const hidePayback        = compareA === "best" || compareB === "best";
 
   const execPara =
     `Over ${period} ${period === 1 ? "month" : "months"}, implementing Steripath® at ${util} utilization reduces the ` +
@@ -193,9 +202,12 @@ export async function exportToPDF({
     ["syringe","bed","users","droplets","pill","dollar","clock"].map(k => renderIconToBase64(SVG[k], ICON_PX))
   );
 
-  const paybackLabel = current.paybackMonths === null ? "N/A"
-    : paybackRounded === 0 ? "< 1 mo."
-    : `${paybackRounded} mo.`;
+  const paybackLabel = hidePayback || pdfPaybackMonths === null ? "N/A"
+    : pdfPaybackRounded === 0 ? "< 1 mo."
+    : `${pdfPaybackRounded} mo.`;
+
+  const netCostAvoidance = Math.max(0, (scenCalcA.totalCost || 0) - (scenCalcB.totalCost || 0));
+  const pdfBedDaysFreed  = Math.max(0, Math.round((scenCalcB.bedDaysFreed || 0) - (scenCalcA.bedDaysFreed || 0)));
 
   const clinicalKpis = [
     { label: "Contaminations Avoided",           value: fmtN(Math.round(contamAvoided)),          icon: iSyringe },
@@ -204,9 +216,9 @@ export async function exportToPDF({
     { label: "Antibiotic Treatment Days Avoided",value: fmtN(Math.round(antibioticDays)),          icon: iPill,     sublabel: "contaminations avoided × 1 day" },
   ];
   const financialKpis = [
-    { label: "Net Cost Avoidance", value: "$" + Math.round((Number(current.netSavings) || 0) / 1000) + "K", icon: iDollar },
-    { label: "Payback Period",     value: paybackLabel,                   icon: iClock  },
-    { label: "Bed Days Freed",     value: fmtN(Math.max(0, Math.round(current.bedDaysFreed))),     icon: iBed  },
+    { label: "Net Cost Avoidance", value: fmtMoney(netCostAvoidance), icon: iDollar },
+    ...(!hidePayback ? [{ label: "Payback Period", value: paybackLabel, icon: iClock }] : []),
+    { label: "Bed Days Freed",     value: fmtN(pdfBedDaysFreed),      icon: iBed  },
   ];
 
   const cardGap  = 3;
@@ -281,7 +293,7 @@ export async function exportToPDF({
   doc.setFontSize(10);
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
-  doc.text("Clinical Results", pageW / 2, y + 5, { align: "center" });
+  doc.text("Financial & Operational Results", pageW / 2, y + 5, { align: "center" });
   y += 9;
 
   const finTotalW = clinCardW * financialKpis.length + cardGap * (financialKpis.length - 1);
@@ -337,16 +349,6 @@ export async function exportToPDF({
       isCurrency: false, isRate: true, isAvoidance: false,
     },
     {
-      label:    "Bed Days Freed",
-      sublabel: "Estimated bed days freed vs. Pre-Steripath® Baseline",
-      vals: {
-        baseline: 0,
-        current:  current.bedDaysFreed,
-        best:     best.bedDaysFreed,
-      },
-      isCurrency: false, isRate: false, isAvoidance: true,
-    },
-    {
       label:    "Cost of Contaminations",
       sublabel: "Direct cost burden from false-positive cultures",
       vals: { baseline: baseline.contaminationCost, current: current.contaminationCost, best: best.contaminationCost },
@@ -386,78 +388,44 @@ export async function exportToPDF({
     return fmtN(Math.round(val));
   };
 
-  const buildDeltaLabel = (cellVal, refVal, isCurrency, isRate, refLabel) => {
-    if (cellVal === null || refVal === null) return null;
-    const cell  = Number(cellVal) || 0;
-    const ref   = Number(refVal)  || 0;
-    const delta = cell - ref;
-    const threshold = isRate ? 0.001 : 0.5;
-    if (Math.abs(delta) < threshold) return null;
-    const sign   = delta >= 0 ? "+" : "-";
-    const abs    = Math.abs(delta);
-    const fmtAbs = isRate
-      ? abs.toFixed(2) + "%"
-      : isCurrency
-        ? fmtCompact(abs)
-        : fmtN(Math.round(abs));
-    const pctStr = !isRate && Math.abs(ref) > 0.5
-      ? ` / ${sign}${Math.abs((delta / ref) * 100).toFixed(0)}%`
-      : "";
-    return `${sign}${fmtAbs}${pctStr} vs. ${refLabel}`;
+  const fmtDeltaCell = (def) => {
+    const aIsHidden = (def.hideBaseline && compareA === "baseline") || (def.isAvoidance && compareA === "baseline");
+    const numA = aIsHidden ? 0 : (Number(def.vals[compareA]) || 0);
+    const numB = Number(def.vals[compareB]) || 0;
+    const delta = numB - numA;
+    const threshold = def.isRate ? 0.001 : 0.5;
+    if (Math.abs(delta) < threshold) return "—";
+    const sign = delta >= 0 ? "+" : "–";
+    const abs = Math.abs(delta);
+    if (def.isRate)     return `${sign}${abs.toFixed(2)}%`;
+    if (def.isCurrency) return `${sign}${fmtCompact(abs)}`;
+    return `${sign}${fmtN(Math.round(abs))}`;
   };
-
-  const getDeltaGood = (cellVal, refVal, isAvoidance) => {
-    const delta = (Number(cellVal) || 0) - (Number(refVal) || 0);
-    return isAvoidance ? delta > 0 : delta < 0;
-  };
-
-  const shouldShowDelta = (key) => key !== "baseline";
-  const getRef          = (key) => key === "current" ? "baseline" : key === "best" ? "current" : null;
-  const getRefLabel     = (key) => key === "current" ? "Baseline" : key === "best" ? "Steripath® Impl." : "";
-
-  const deltaCells = new Map();
-  tableRowDefs.forEach((def, rIdx) => {
-    activeScenarios.forEach((s, sOffset) => {
-      if (!shouldShowDelta(s.key)) return;
-      const refKey = getRef(s.key);
-      if (!refKey) return;
-      const dLabel = buildDeltaLabel(
-        def.vals[s.key], def.vals[refKey], def.isCurrency, def.isRate, getRefLabel(s.key),
-      );
-      if (!dLabel) return;
-      const isGood = getDeltaGood(def.vals[s.key], def.vals[refKey], def.isAvoidance);
-      deltaCells.set(`${rIdx}-${sOffset + 1}`, { text: dLabel, isGood });
-    });
-  });
 
   const tBody = tableRowDefs.map((def) => [
     def.label,
-    ...activeScenarios.map((s) => fmtCell(def.vals[s.key], s.key, def)),
+    fmtCell(def.vals[compareA], compareA, def),
+    fmtCell(def.vals[compareB], compareB, def),
+    fmtDeltaCell(def),
   ]);
 
-  const bodyCellH    = 13;
-  const deltaFromBot = 3.0;
-  const valuePadTop  = 2;
-  const labelColW    = 56;
-  const dataColW     = (pageW - margin * 2 - labelColW) / activeScenarios.length;
-  const sublabels    = tableRowDefs.map((d) => d.sublabel || "");
+  const bodyCellH = 13;
+  const labelColW = 56;
+  const dataColW  = (pageW - margin * 2 - labelColW) / 3;
+  const sublabels = tableRowDefs.map((d) => d.sublabel || "");
 
   const outColStyles = {
     0: { cellWidth: labelColW, fontStyle: "bold", fontSize: 9, textColor: darkGray, halign: "left", valign: "top",
          cellPadding: { top: 3, bottom: 3, left: 3, right: 2 } },
+    1: { cellWidth: dataColW, halign: "center", valign: "top", cellPadding: { top: 2, bottom: 3, left: 1, right: 1 } },
+    2: { cellWidth: dataColW, halign: "center", valign: "top", cellPadding: { top: 2, bottom: 3, left: 1, right: 1 } },
+    3: { cellWidth: dataColW, halign: "center", valign: "top", cellPadding: { top: 2, bottom: 3, left: 1, right: 1 },
+         textColor: darkGray },
   };
-  activeScenarios.forEach((_, i) => {
-    outColStyles[i + 1] = {
-      cellWidth: dataColW,
-      halign: "center",
-      valign: "top",
-      cellPadding: { top: valuePadTop, bottom: deltaFromBot + 3, left: 1, right: 1 },
-    };
-  });
 
   doc.autoTable({
     startY: y,
-    head: [["Metric", ...activeScenarios.map((s) => s.label)]],
+    head: [["Metric", scenA.label, scenB.label, "Change"]],
     body: tBody,
     theme: "grid",
     headStyles: {
@@ -482,41 +450,29 @@ export async function exportToPDF({
     margin: { left: margin, right: margin },
 
     willDrawCell: (data) => {
-      if (data.section === "head" && data.column.index > 0) {
-        const s = activeScenarios[data.column.index - 1];
-        if (s) {
-          data.cell.styles.fillColor = scenarioBg[s.key] || [248, 250, 252];
-          data.cell.styles.textColor = scenarioText[s.key] || darkGray;
-          data.cell.styles.fontStyle = "bold";
+      if (data.section === "head") {
+        if (data.column.index === 1) {
+          data.cell.styles.fillColor = scenarioBg[scenA.key] || [248, 250, 252];
+          data.cell.styles.textColor = scenarioText[scenA.key] || darkGray;
+        } else if (data.column.index === 2) {
+          data.cell.styles.fillColor = scenarioBg[scenB.key] || [248, 250, 252];
+          data.cell.styles.textColor = scenarioText[scenB.key] || darkGray;
+        } else if (data.column.index === 3) {
+          data.cell.styles.fillColor = [248, 250, 252];
+          data.cell.styles.textColor = darkGray;
         }
       }
     },
 
     didDrawCell: (data) => {
-      if (data.section === "body") {
-        if (data.column.index === 0) {
-          const sub = sublabels[data.row.index];
-          if (sub) {
-            doc.setFontSize(7.5);
-            doc.setFont(undefined, "normal");
-            doc.setTextColor(...slateGray);
-            const subLines = doc.splitTextToSize(sub, data.cell.width - 5);
-            doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 4.0);
-          }
-        }
-        if (data.column.index > 0) {
-          const key   = `${data.row.index}-${data.column.index}`;
-          const delta = deltaCells.get(key);
-          if (!delta) return;
-          doc.setFontSize(8);
+      if (data.section === "body" && data.column.index === 0) {
+        const sub = sublabels[data.row.index];
+        if (sub) {
+          doc.setFontSize(7.5);
           doc.setFont(undefined, "normal");
-          doc.setTextColor(...(delta.isGood ? green : red));
-          doc.text(
-            delta.text,
-            data.cell.x + data.cell.width / 2,
-            data.cell.y + data.cell.height - deltaFromBot,
-            { align: "center" },
-          );
+          doc.setTextColor(...slateGray);
+          const subLines = doc.splitTextToSize(sub, data.cell.width - 5);
+          doc.text(subLines, data.cell.x + 3, data.cell.y + data.cell.height - 4.0);
         }
       }
     },
@@ -544,9 +500,9 @@ export async function exportToPDF({
 
   // Pre-compute footnote height so we can vertically center the input tables
   const _fnFullW = pageW - margin * 2;
-  doc.setFontSize(5);
+  doc.setFontSize(7);
   const _fnH = (doc.splitTextToSize(footnoteDisclaimer, _fnFullW).length + 1 +
-                doc.splitTextToSize(footnoteRefs, _fnFullW).length) * 2.0 + 2;
+                doc.splitTextToSize(footnoteRefs, _fnFullW).length) * 2.5 + 2;
   const _fnAnchorY = pageH - _fnH - 8;
   // Estimate input block height: 4mm for title row + max of gen/scen table heights
   const _inputRows  = isBlended ? 4 : 6;
@@ -775,13 +731,13 @@ export async function exportToPDF({
   // ── FOOTNOTE — full width, positioned after tables, consistent font ─────────
   const fullWidth = pageW - margin * 2;
 
-  doc.setFontSize(5);
+  doc.setFontSize(7);
   doc.setFont(undefined, "normal");
   doc.setTextColor(...lightGray);
 
   const disclaimerLines = doc.splitTextToSize(footnoteDisclaimer, fullWidth);
   const refLines        = doc.splitTextToSize(footnoteRefs, fullWidth);
-  const lineH = 2.0;
+  const lineH = 2.5;
   const footnoteH = (disclaimerLines.length + 1 + refLines.length) * lineH + 2;
 
   // If footnote would overlap the tables, push it just below; otherwise anchor near bottom

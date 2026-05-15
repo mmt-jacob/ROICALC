@@ -54,8 +54,8 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   const baselineRateFmt = `${(Number(inputs?.baselineRate) || 0).toFixed(2)}%`;
   const currentRateFmt  = `${(Number(calculations?.current?.blendedRate) || 0).toFixed(2)}%`;
 
-  let draft = `Hi,\n\nThank you for your time today. I wanted to share the results of a Steripath® Impact Analysis ${facilityPhrase}.\n\n`;
-  draft += `Based on the analysis, implementing Steripath® at ${utilPct} utilization would reduce contamination rates from ${baselineRateFmt} to ${currentRateFmt}, which translates to the following results:\n\n`;
+  let draft = `Hi,\n\nThank you for your time today. I wanted to share the results of the Steripath® Impact Analysis ${facilityPhrase}.\n\n`;
+  draft += `Based on the analysis, implementing Steripath® at ${utilPct} utilization would reduce contamination rates from ${baselineRateFmt} to ${currentRateFmt}, which translates to the following benefits:\n\n`;
   draft += `  • Contaminations avoided: ${fmtN(contamAvoided)} events\n`;
   draft += `  • Bed days freed: ${fmtN(bedDays)}\n`;
   draft += `  • Potential mortalities avoided: ${fmtN(mortalityReduction)} patients\n`;

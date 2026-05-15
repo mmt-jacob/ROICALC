@@ -1,6 +1,5 @@
 import { DollarSign, Clock, Users, Bed, HeartPulse, Droplets, Pill, Syringe } from "lucide-react";
 import { SummaryCard } from "./SummaryCard";
-import InvestmentComparisonBar from "./InvestmentComparisonBar";
 import { formatCurrencyWhole, formatNumber } from "@/utils/formatters";
 
 const SHOWPAD_LINK =
@@ -76,23 +75,6 @@ export function ExecutiveSummary({
   // Hide payback whenever Sc. 3 is involved in either selector
   const hidePayback = compareA === "best" || compareB === "best";
 
-  // Investment bar props — computed from calculations directly
-  const baselineDev = calculations.baseline.deviceCost || 0;
-  const steripathDev = calculations.current.deviceCost || 0;
-  const incr = steripathDev - baselineDev;
-  const totalDeviceInvestment = incr > 0 ? incr : steripathDev;
-
-  const grossSavings =
-    (calculations.baseline.contaminationCost || 0) -
-    (calculations.current.contaminationCost || 0);
-
-  // Sc3: same formula as Sc2 (gross contamination savings / total device investment)
-  // then subtract Sc2's ratio to show the incremental improvement.
-  const targetDeviceInvestment = calculations.best.deviceCost || 0;
-  const targetGrossSavings =
-    (calculations.baseline.contaminationCost || 0) -
-    (calculations.best.contaminationCost || 0);
-
   const selectCls = [
     "font-semibold border border-[#99CCFF] rounded-lg bg-white text-[#0B2D71]",
     "focus:outline-none focus:ring-2 focus:ring-[#0061D5]/20 cursor-pointer",
@@ -167,13 +149,12 @@ export function ExecutiveSummary({
           icon={<Pill size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
           compact={isMobile}
-          fullWidth={isMobile}
           href={SHOWPAD_LINK}
         />
       </div>
 
       {/* Financial Results */}
-      {sectionLabel("Clinical Results")}
+      {sectionLabel("Financial & Operational Results")}
       <div className={`grid gap-4 mb-6 ${isMobile ? "grid-cols-2" : hidePayback ? "grid-cols-2" : "grid-cols-3 gap-6"}`}>
         <SummaryCard
           label="Net Cost Avoidance"
@@ -199,18 +180,11 @@ export function ExecutiveSummary({
           icon={<Bed size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
           compact={isMobile}
+          fullWidth={isMobile}
           href={SHOWPAD_LINK_BED_DAYS}
         />
       </div>
 
-      {/* Investment bar — sits under financial results */}
-      <InvestmentComparisonBar
-        grossSavings={grossSavings}
-        totalDeviceInvestment={totalDeviceInvestment}
-        showTarget={showBestScenario}
-        targetGrossSavings={targetGrossSavings}
-        targetDeviceInvestment={targetDeviceInvestment}
-      />
     </section>
   );
 }

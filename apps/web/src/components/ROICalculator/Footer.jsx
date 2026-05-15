@@ -3,7 +3,7 @@ export function Footer() {
     <footer className="max-w-[1600px] mx-auto px-6 pt-2 pb-6 space-y-3">
       {/* Always-visible disclosure */}
       <div className="bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-5 py-4">
-        <p className="text-[11px] leading-relaxed text-[#636D78]">
+        <p className="text-sm leading-relaxed text-[#636D78]">
           <strong className="text-[#151F26] font-semibold">Disclosure: </strong>
           This tool provides illustrative estimates of cost avoidance and patient impact based on
           user-entered information and assumptions derived from published literature, internal
