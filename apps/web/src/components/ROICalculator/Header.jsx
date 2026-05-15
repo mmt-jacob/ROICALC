@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import { Download, BarChart2, Mail } from "lucide-react";
 
 export function Header({
@@ -7,8 +8,29 @@ export function Header({
   isEmailingPDF,
   hospitalName,
 }) {
+  const headerRef = useRef(null);
+
+  const handleMouseMove = useCallback((e) => {
+    const el = headerRef.current;
+    if (!el) return;
+    const { left } = el.getBoundingClientRect();
+    el.style.setProperty("--mouse-x", `${e.clientX - left}px`);
+    el.style.setProperty("--glow-opacity", "1");
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    el.style.setProperty("--glow-opacity", "0");
+  }, []);
+
   return (
-    <header className="bg-white border-b border-[#CBCFD3] sticky top-0 z-50">
+    <header
+      ref={headerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="glass-header sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/60 shadow-[0_1px_12px_0_rgba(0,0,0,0.06)]"
+    >
       <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img

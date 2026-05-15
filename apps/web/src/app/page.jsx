@@ -115,10 +115,12 @@ export default function ROICalculator() {
     if (!baselineAltNonSteripathOverridden) setBaselineAltNonSteripathRate(baselineRate);
   }, [baselineRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ensure compareB stays valid when customer status changes
+  // Reset selectors to Sc1 vs Sc2 whenever Sc3 is hidden
   useEffect(() => {
-    if (!isCurrentCustomer && compareA === "best") setCompareA("baseline");
-    if (!isCurrentCustomer && compareB === "best") setCompareB("current");
+    if (!isCurrentCustomer) {
+      setCompareA("baseline");
+      setCompareB("current");
+    }
   }, [isCurrentCustomer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const calculations = useROICalculations({

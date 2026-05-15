@@ -29,7 +29,7 @@ export function ExecutiveSummary({
     return true;
   });
 
-  const compareAOptions = activeOptions.filter((o) => o.value !== "best");
+  const compareAOptions = activeOptions.slice(0, -1);
   const compareAIndex = activeOptions.findIndex((o) => o.value === compareA);
   // B options: only scenarios that come after A in the list
   const compareBOptions = activeOptions.filter((_, i) => i > compareAIndex);

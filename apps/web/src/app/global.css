@@ -8,7 +8,74 @@
   }
 }
 
-/* ─── Fluent Reveal Glow — SummaryCard ──────────────────────────────────── */
+/* ─── Liquid Glass — Header ─────────────────────────────────────────────── */
+.glass-header {
+  isolation: isolate;
+}
+
+/* Specular surface highlight — tracks cursor X, spans full header height */
+.glass-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 520px 160% at var(--mouse-x, -400px) 50%,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.09) 40%,
+    transparent 68%
+  );
+  opacity: var(--glow-opacity, 0);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Bottom-edge rim light — peaks at cursor X, gives the glassy border shimmer */
+.glass-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: radial-gradient(
+    ellipse 360px 100% at var(--mouse-x, -400px) 0%,
+    rgba(180, 210, 255, 0.55),
+    transparent 70%
+  );
+  opacity: var(--glow-opacity, 0);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── Fluent Reveal — SummaryCard wrapper (border sheen) ────────────────── */
+.fluent-card-wrap {
+  position: relative;
+  border-radius: 1rem; /* matches rounded-2xl */
+  isolation: isolate;
+}
+
+/* The sheen sits 1.5px outside the card edges; the card's solid bg covers
+   the interior, leaving only the border ring visible to the gradient. */
+.fluent-card-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: calc(1rem + 1.5px);
+  background: radial-gradient(
+    circle 160px at var(--mouse-x, -200px) var(--mouse-y, -200px),
+    rgba(255, 255, 255, 0.90) 0%,
+    rgba(255, 255, 255, 0.28) 32%,
+    transparent 64%
+  );
+  opacity: var(--glow-opacity, 0);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ─── Fluent Reveal Glow — SummaryCard interior ─────────────────────────── */
 .reveal-card {
   position: relative;
   overflow: hidden;
