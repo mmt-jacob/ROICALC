@@ -199,7 +199,6 @@ export async function exportToPDF({
 
   const clinicalKpis = [
     { label: "Contaminations Avoided",           value: fmtN(Math.round(contamAvoided)),          icon: iSyringe },
-    { label: "Bed Days Freed",                   value: fmtN(Math.max(0, Math.round(current.bedDaysFreed))), icon: iBed },
     { label: "Potential Mortalities Avoided",    value: `${fmtN(mortalityReduction)} People`,      icon: iUsers,    sublabel: "contaminations avoided × 3.4%" },
     { label: "AKI Events Avoided",               value: fmtN(Math.round(akiAvoided)),              icon: iDroplets, sublabel: "contaminations avoided × 13.4%" },
     { label: "Antibiotic Treatment Days Avoided",value: fmtN(Math.round(antibioticDays)),          icon: iPill,     sublabel: "contaminations avoided × 1 day" },
@@ -207,6 +206,7 @@ export async function exportToPDF({
   const financialKpis = [
     { label: "Net Cost Avoidance", value: "$" + Math.round((Number(current.netSavings) || 0) / 1000) + "K", icon: iDollar },
     { label: "Payback Period",     value: paybackLabel,                   icon: iClock  },
+    { label: "Bed Days Freed",     value: fmtN(Math.max(0, Math.round(current.bedDaysFreed))),     icon: iBed  },
   ];
 
   const cardGap  = 3;
@@ -281,7 +281,7 @@ export async function exportToPDF({
   doc.setFontSize(10);
   doc.setFont(undefined, "bold");
   doc.setTextColor(...darkGray);
-  doc.text("Financial Results", pageW / 2, y + 5, { align: "center" });
+  doc.text("Clinical Results", pageW / 2, y + 5, { align: "center" });
   y += 9;
 
   const finTotalW = clinCardW * financialKpis.length + cardGap * (financialKpis.length - 1);

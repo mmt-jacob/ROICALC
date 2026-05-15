@@ -133,21 +133,13 @@ export function ExecutiveSummary({
 
       {/* Clinical Results */}
       {sectionLabel("Clinical Results")}
-      <div className={`grid gap-4 mb-6 ${isMobile ? "grid-cols-2" : "grid-cols-5 gap-6"}`}>
+      <div className={`grid gap-4 mb-6 ${isMobile ? "grid-cols-2" : "grid-cols-4 gap-6"}`}>
         <SummaryCard
           label="Contaminations Avoided"
           value={formatNumber(Math.round(contamAvoided))}
           icon={<Syringe size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
           compact={isMobile}
-        />
-        <SummaryCard
-          label="Bed Days Freed"
-          value={formatNumber(Math.round(bedDaysFreed))}
-          icon={<Bed size={isMobile ? 16 : 20} className="text-white" />}
-          color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
-          compact={isMobile}
-          href={SHOWPAD_LINK_BED_DAYS}
         />
         <SummaryCard
           label="Potential Mortalities Avoided"
@@ -181,8 +173,8 @@ export function ExecutiveSummary({
       </div>
 
       {/* Financial Results */}
-      {sectionLabel("Financial Results")}
-      <div className={`grid gap-4 mb-6 ${isMobile ? "grid-cols-2" : hidePayback ? "grid-cols-1" : "grid-cols-2 gap-6"}`}>
+      {sectionLabel("Clinical Results")}
+      <div className={`grid gap-4 mb-6 ${isMobile ? "grid-cols-2" : hidePayback ? "grid-cols-2" : "grid-cols-3 gap-6"}`}>
         <SummaryCard
           label="Net Cost Avoidance"
           value={formatCurrencyWhole(costAvoidance)}
@@ -201,6 +193,14 @@ export function ExecutiveSummary({
             href={SHOWPAD_LINK_BED_DAYS}
           />
         )}
+        <SummaryCard
+          label="Bed Days Freed"
+          value={formatNumber(Math.round(bedDaysFreed))}
+          icon={<Bed size={isMobile ? 16 : 20} className="text-white" />}
+          color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
+          compact={isMobile}
+          href={SHOWPAD_LINK_BED_DAYS}
+        />
       </div>
 
       {/* Investment bar — sits under financial results */}
