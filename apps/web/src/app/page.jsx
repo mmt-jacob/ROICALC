@@ -11,8 +11,17 @@ import { ScenarioComparisonTable } from "@/components/ROICalculator/ScenarioComp
 import { MethodologySection } from "@/components/ROICalculator/MethodologySection";
 import { Footer } from "@/components/ROICalculator/Footer";
 import { AccountNameInput } from "@/components/ROICalculator/AccountNameInput";
-import { StudySelectionModal } from "@/components/ROICalculator/StudySelectionModal";
-import { acquireGraphToken, sendEmailViaGraph, getSignedInAccount, warmUpAuth } from "@/utils/graphMailSender";
+import { StudySelectionModal, STUDIES } from "@/components/ROICalculator/StudySelectionModal";
+import {
+  acquireGraphToken,
+  acquireGraphTokenSilent,
+  sendEmailViaGraph,
+  getSignedInAccount,
+  warmUpAuth,
+  savePendingEmail,
+  getPendingEmail,
+  clearPendingEmail,
+} from "@/utils/graphMailSender";
 
 function Toggle({ checked, onChange, color = "bg-[#0842A6]" }) {
   return (
@@ -91,6 +100,10 @@ export default function ROICalculator() {
   const [scrolledPastInputs, setScrolledPastInputs] = useState(false);
   const resultsRef = useRef(null);
 
+  const [isEmailingPDF, setIsEmailingPDF] = useState(false);
+  const [showStudyModal, setShowStudyModal] = useState(false);
+  const [signedInEmail, setSignedInEmail] = useState(() => getSignedInAccount()?.username ?? null);
+
   useEffect(() => {
     const checkMobile = () => setMobileView(window.innerWidth < 768);
     checkMobile();
@@ -103,6 +116,67 @@ export default function ROICalculator() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // After a Microsoft login redirect, auth-redirect.html caches the token then bounces back
+  // here. Check for a saved pending email and complete the send silently.
+  useEffect(() => {
+    const pending = getPendingEmail();
+    if (!pending) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setIsEmailingPDF(true);
+      try {
+        const accessToken = await acquireGraphTokenSilent();
+        if (cancelled) return;
+        if (!accessToken) {
+          clearPendingEmail();
+          alert("Sign-in did not complete. Please try sending again.");
+          return;
+        }
+
+        const account = getSignedInAccount();
+        if (account) setSignedInEmail(account.username);
+
+        const selectedStudies = STUDIES.filter((s) => pending.selectedStudyIds.includes(s.id));
+
+        const { blob, fileName } = await exportToPDF({
+          inputs: pending.pdfInputs,
+          calculations: pending.calculations,
+          showBestScenario: pending.showBestScenario,
+          hospitalName: pending.hospitalName,
+          returnBlob: true,
+          compareA: pending.compareA,
+          compareB: pending.compareB,
+        });
+
+        const subject = `Steripath® Impact Analysis${pending.hospitalName ? ` — ${pending.hospitalName}` : ""}`;
+        await sendEmailViaGraph({
+          accessToken,
+          to: pending.recipientEmail,
+          subject,
+          bodyText: pending.emailBody,
+          pdfBlob: blob,
+          pdfName: fileName,
+          studies: selectedStudies,
+        });
+
+        clearPendingEmail();
+        alert("Email sent successfully!");
+      } catch (err) {
+        if (!cancelled) {
+          clearPendingEmail();
+          console.error("Error completing post-redirect send:", err);
+          alert(`Unable to send email: ${err?.message || err?.errorCode || JSON.stringify(err)}`);
+        }
+      } finally {
+        if (!cancelled) setIsEmailingPDF(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep non-Steripath draw rates in sync with baseline unless user has overridden them
   useEffect(() => {
@@ -230,10 +304,6 @@ export default function ROICalculator() {
     e.target.value = "";
   };
 
-  const [isEmailingPDF, setIsEmailingPDF] = useState(false);
-  const [showStudyModal, setShowStudyModal] = useState(false);
-  const [signedInEmail, setSignedInEmail] = useState(() => getSignedInAccount()?.username ?? null);
-
   const pdfInputs = {
     volume,
     baselineRate,
@@ -279,22 +349,37 @@ export default function ROICalculator() {
   // Called when the user confirms the modal
   const handleEmailPDFConfirm = async (selectedStudies, emailBody, recipientEmail) => {
     setIsEmailingPDF(true);
+
+    // Save the full send payload before acquiring a token — acquireGraphToken may
+    // navigate the page away (redirect flow) and we need to restore state on return.
+    savePendingEmail({
+      recipientEmail,
+      emailBody,
+      selectedStudyIds: selectedStudies.map((s) => s.id),
+      hospitalName,
+      showBestScenario,
+      compareA,
+      compareB,
+      pdfInputs: { ...pdfInputs },
+      calculations: JSON.parse(JSON.stringify(calculations)),
+    });
+
     try {
-      console.log("[Email] Step 1: acquiring token...");
       const accessToken = await acquireGraphToken();
-      console.log("[Email] Step 2: token acquired", !!accessToken);
+      if (!accessToken) {
+        // Redirect initiated — page is navigating to Microsoft login. Do nothing here;
+        // the post-redirect useEffect will complete the send when the app reloads.
+        return;
+      }
+
+      // Silent path succeeded — complete the send now.
+      clearPendingEmail();
       const account = getSignedInAccount();
       if (account) setSignedInEmail(account.username);
-
-      console.log("[Email] Step 3: generating PDF...");
       const { blob, fileName } = await exportToPDF({
         inputs: pdfInputs, calculations, showBestScenario, hospitalName, returnBlob: true, compareA, compareB,
       });
-      console.log("[Email] Step 4: PDF ready", fileName);
-
       const subject = `Steripath® Impact Analysis${hospitalName ? ` — ${hospitalName}` : ""}`;
-
-      console.log("[Email] Step 5: sending via Graph API...");
       await sendEmailViaGraph({
         accessToken,
         to: recipientEmail,
@@ -304,12 +389,11 @@ export default function ROICalculator() {
         pdfName: fileName,
         studies: selectedStudies,
       });
-
       setShowStudyModal(false);
       alert("Email sent successfully!");
     } catch (err) {
-      console.error("Error sending email — full error:", err);
-      console.error("Error name:", err?.name, "| message:", err?.message, "| code:", err?.errorCode);
+      clearPendingEmail();
+      console.error("Error sending email:", err);
       alert(`Unable to send email: ${err?.message || err?.errorCode || JSON.stringify(err)}`);
     } finally {
       setIsEmailingPDF(false);

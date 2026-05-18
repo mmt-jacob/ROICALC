@@ -7,9 +7,6 @@
 <body>
   <script src="/msal-browser.min.js"></script>
   <script>
-    console.log("[Auth Redirect] Loaded");
-    console.log("[Auth Redirect] Has opener:", !!window.opener);
-
     const msalInstance = new msal.PublicClientApplication({
       auth: {
         clientId: "bd1a125d-bb30-4d9e-9194-93a475450c82",
@@ -18,29 +15,18 @@
       },
       cache: {
         cacheLocation: "localStorage",
-        temporaryCacheLocation: "localStorage",
         storeAuthStateInCookie: true,
       },
     });
 
-    const msalKeys = Object.keys(localStorage).filter(k => k.includes("msal"));
-    console.log("[Auth Redirect] localStorage MSAL keys:", msalKeys);
-    console.log("[Auth Redirect] sessionStorage keys:", Object.keys(sessionStorage));
-    console.log("[Auth Redirect] search:", window.location.search);
-    console.log("[Auth Redirect] hash:", window.location.hash.substring(0, 200));
-    const searchParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const hasCode = searchParams.has("code") || hashParams.has("code");
-    const hasState = searchParams.has("state") || hashParams.has("state");
-    console.log("[Auth Redirect] hasCode:", hasCode, "hasState:", hasState);
-
     msalInstance.initialize().then(() => {
-      console.log("[Auth Redirect] MSAL initialized");
       return msalInstance.handleRedirectPromise();
-    }).then((result) => {
-      console.log("[Auth Redirect] handleRedirectPromise result:", result);
+    }).then(() => {
+      // Token (if any) is now cached in localStorage. Return to the app.
+      window.location.replace(window.location.origin + "/");
     }).catch((err) => {
       console.error("[Auth Redirect] Error:", err);
+      window.location.replace(window.location.origin + "/");
     });
   </script>
 </body>

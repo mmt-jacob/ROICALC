@@ -10,27 +10,30 @@ async function ensureInitialized() {
   }
 }
 
-function clearMsalTempState() {
-  // Remove temporary MSAL keys that get left behind by failed auth attempts.
-  // These cause acquireTokenPopup to open a silent cleanup popup instead of
-  // going to Microsoft login. Account/token cache keys are left intact.
-  const tempPatterns = ["interaction", "request.", "pkce", "nonce.idtoken"];
-  [sessionStorage, localStorage].forEach((store) => {
-    Object.keys(store)
-      .filter((k) => tempPatterns.some((p) => k.toLowerCase().includes(p)))
-      .forEach((k) => store.removeItem(k));
-  });
+const PENDING_EMAIL_KEY = "steripath_pending_email";
+
+export function savePendingEmail(payload) {
+  localStorage.setItem(PENDING_EMAIL_KEY, JSON.stringify(payload));
 }
 
-// Call this when the email modal opens — silently refreshes a cached token if one
-// exists. Does NOT use ssoSilent (hidden iframe) because Azure SWA's cross-origin
-// iframe sandboxing blocks that flow. Fresh logins are handled by acquireTokenPopup
-// when the user clicks Send.
+export function getPendingEmail() {
+  try {
+    const raw = localStorage.getItem(PENDING_EMAIL_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingEmail() {
+  localStorage.removeItem(PENDING_EMAIL_KEY);
+}
+
 export async function warmUpAuth() {
   try {
     await ensureInitialized();
     const accounts = msalInstance.getAllAccounts();
-    if (accounts.length === 0) return; // no cached account — nothing to do
+    if (accounts.length === 0) return;
     await msalInstance.acquireTokenSilent({
       scopes: GRAPH_MAIL_SCOPES,
       account: accounts[0],
@@ -40,48 +43,49 @@ export async function warmUpAuth() {
   }
 }
 
+// Returns an access token via silent cache, or initiates a redirect and returns null.
+// Callers must save any state they need before calling this, as the page may navigate away.
 export async function acquireGraphToken() {
   await ensureInitialized();
   const accounts = msalInstance.getAllAccounts();
-  console.log("Accounts:", accounts);
 
-  // 1. Cached token — fully silent, no network call
   if (accounts.length > 0) {
     try {
       const result = await msalInstance.acquireTokenSilent({
         scopes: GRAPH_MAIL_SCOPES,
         account: accounts[0],
       });
-      console.log("Token acquired (silent):", result);
       return result.accessToken;
     } catch (err) {
       if (!(err instanceof InteractionRequiredAuthError)) throw err;
     }
   }
 
-  // 2. Popup — clear any stale temp state first so MSAL doesn't open a cleanup
-  //    popup instead of going to Microsoft login
-  clearMsalTempState();
-  console.log("[Auth] Before popup accounts:", msalInstance.getAllAccounts());
-  console.log("[Auth] localStorage before popup:", Object.keys(localStorage));
-  console.log("[Auth] sessionStorage before popup:", Object.keys(sessionStorage));
-
-  // Log what MSAL writes to storage 500ms after opening the popup (while user is signing in)
-  setTimeout(() => {
-    console.log("[Auth] localStorage 500ms after popup:", Object.keys(localStorage));
-    console.log("[Auth] sessionStorage 500ms after popup:", Object.keys(sessionStorage));
-  }, 500);
-
-  const result = await msalInstance.acquireTokenPopup({
+  // Redirect flow — stores PKCE in sessionStorage and navigates to Microsoft login.
+  // SessionStorage persists across same-tab navigations, so MSAL can complete the exchange
+  // when auth-redirect.html loads.
+  await msalInstance.acquireTokenRedirect({
     scopes: GRAPH_MAIL_SCOPES,
-    redirectUri: `${window.location.origin}/auth-redirect.html`,
-    prompt: "select_account",
+    redirectUri: window.location.origin + "/auth-redirect.html",
   });
-  console.log("[Auth] Popup result:", result);
-  console.log("[Auth] Result account:", result.account);
-  console.log("[Auth] After popup accounts:", msalInstance.getAllAccounts());
-  console.log("Token acquired (popup):", result);
-  return result.accessToken;
+  return null; // Never reached; page is navigating
+}
+
+// Silent-only token acquisition for the post-redirect completion path.
+// Returns null instead of redirecting if no cached token is available.
+export async function acquireGraphTokenSilent() {
+  await ensureInitialized();
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length === 0) return null;
+  try {
+    const result = await msalInstance.acquireTokenSilent({
+      scopes: GRAPH_MAIL_SCOPES,
+      account: accounts[0],
+    });
+    return result.accessToken;
+  } catch {
+    return null;
+  }
 }
 
 export function getSignedInAccount() {
@@ -144,7 +148,6 @@ export async function sendEmailViaGraph({ accessToken, to, subject, bodyText, pd
     attachments,
   };
 
-  console.log("Calling Graph...");
   const res = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
     method: "POST",
     headers: {
@@ -153,7 +156,6 @@ export async function sendEmailViaGraph({ accessToken, to, subject, bodyText, pd
     },
     body: JSON.stringify({ message }),
   });
-  console.log("Email API response:", res.status, res.statusText);
 
   if (!res.ok) {
     const text = await res.text();
