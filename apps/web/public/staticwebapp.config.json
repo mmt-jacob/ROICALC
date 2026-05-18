@@ -22,5 +22,8 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": ["/images/*.{png,jpg,gif,ico}", "/*.{css,scss,js}", "/*.html"]
+  },
+  "globalHeaders": {
+    "Cross-Origin-Opener-Policy": "unsafe-none"
   }
 }
