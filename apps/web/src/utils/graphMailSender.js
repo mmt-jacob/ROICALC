@@ -55,14 +55,22 @@ export async function acquireGraphToken() {
 
   // 2. Popup — must be called directly within a user gesture to avoid browser blocking
   try {
+    console.log("[Auth] Before popup accounts:", msalInstance.getAllAccounts());
     const result = await msalInstance.acquireTokenPopup({ scopes: GRAPH_MAIL_SCOPES });
+    console.log("[Auth] Popup result:", result);
+    console.log("[Auth] Result account:", result.account);
+    console.log("[Auth] After popup accounts:", msalInstance.getAllAccounts());
     console.log("Token acquired (popup):", result);
     return result.accessToken;
   } catch (err) {
     // A previous popup was abandoned and left an interaction lock — clear it and retry once
     if (err instanceof BrowserAuthError && err.errorCode === "interaction_in_progress") {
       clearInteractionLock();
+      console.log("[Auth] Before popup retry accounts:", msalInstance.getAllAccounts());
       const result = await msalInstance.acquireTokenPopup({ scopes: GRAPH_MAIL_SCOPES });
+      console.log("[Auth] Popup retry result:", result);
+      console.log("[Auth] Result account:", result.account);
+      console.log("[Auth] After popup retry accounts:", msalInstance.getAllAccounts());
       console.log("Token acquired (popup retry):", result);
       return result.accessToken;
     }
