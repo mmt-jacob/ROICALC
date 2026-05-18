@@ -108,9 +108,14 @@ export function ExecutiveSummary({
       </div>
 
       {!isMobile && (
-        <p className="text-sm text-[#1A202C] font-bold mb-4">
-          💡 Blue boxes are clickable to view supporting sources &amp; studies
-        </p>
+        <div className="mb-4 space-y-0.5">
+          <p className="text-sm text-[#1A202C] font-bold">
+            💡 Blue boxes are clickable to view supporting sources &amp; studies
+          </p>
+          <p className="text-sm text-[#636D78]">
+            Results are estimates based on inputs entered above and supported studies
+          </p>
+        </div>
       )}
 
       {/* Clinical Results */}
