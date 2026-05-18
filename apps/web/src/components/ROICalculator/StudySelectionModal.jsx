@@ -70,18 +70,12 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   return draft;
 }
 
-const STUDIES_SEP = "\n\nAlso attached are supporting studies:";
+// Shared prefix used to locate the attach line regardless of which variant is active
+const ATTACH_PREFIX = "\nI've attached the full Impact Analysis for your review";
+const ATTACH_PLAIN   = "\nI've attached the full Impact Analysis for your review.";
+const ATTACH_WITH_STUDIES = "\nI've attached the full Impact Analysis for your review, along with supporting clinical and economic studies:";
+const CLOSING  = "\n\nHappy to walk through the details and discuss next steps.";
 const SIGN_OFF = "\n\nBest regards,";
-
-function buildStudiesMention(studies) {
-  if (!studies.length) return "";
-  return (
-    STUDIES_SEP +
-    "\n" +
-    studies.map((s) => `  • ${s.label}`).join("\n") +
-    "\n\nHappy to walk through the details and discuss next steps."
-  );
-}
 
 function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
   const inputRef = useRef(null);
@@ -189,27 +183,34 @@ export function StudySelectionModal({
     el.style.height = el.scrollHeight + "px";
   }, [emailBody]);
 
-  // Keep the studies mention in sync with checkbox selection, placed before sign-off.
-  // Strips any existing studies block first so user edits above are preserved.
+  // Keep the attach line + studies list in sync with checkbox selection.
+  // Replaces the entire "I've attached…" sentence (plain or with-studies variant)
+  // so the two variants merge into one clean sentence.
   useEffect(() => {
     setEmailBody((prev) => {
-      // Remove existing studies block if present
-      const sepIdx = prev.indexOf(STUDIES_SEP);
-      let base;
-      if (sepIdx >= 0) {
-        const soAfter = prev.indexOf(SIGN_OFF, sepIdx);
-        base = prev.slice(0, sepIdx) + (soAfter >= 0 ? prev.slice(soAfter) : "");
-      } else {
-        base = prev;
-      }
       const studies = STUDIES.filter((s) => selected.has(s.id));
-      if (!studies.length) return base;
-      // Insert before sign-off
-      const soIdx = base.lastIndexOf(SIGN_OFF);
-      const mention = buildStudiesMention(studies);
-      return soIdx >= 0
-        ? base.slice(0, soIdx) + mention + base.slice(soIdx)
-        : base + mention;
+
+      // Find the attach line (works for both ATTACH_PLAIN and ATTACH_WITH_STUDIES)
+      const attachIdx = prev.indexOf(ATTACH_PREFIX);
+      if (attachIdx < 0) return prev;
+
+      const signOffIdx = prev.indexOf(SIGN_OFF, attachIdx);
+      const before = prev.slice(0, attachIdx);
+      const after   = signOffIdx >= 0
+        ? prev.slice(signOffIdx).replace(/^\n+/, "")
+        : "";
+
+      if (!studies.length) {
+        return before + ATTACH_PLAIN + "\n\n" + after;
+      }
+
+      const studiesBlock =
+        ATTACH_WITH_STUDIES +
+        "\n" +
+        studies.map((s) => `  • ${s.label}`).join("\n") +
+        CLOSING;
+
+      return before + studiesBlock + "\n\n" + after;
     });
   }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
 

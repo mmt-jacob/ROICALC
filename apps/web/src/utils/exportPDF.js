@@ -167,8 +167,7 @@ export async function exportToPDF({
   const hidePayback        = compareA === "best" || compareB === "best";
 
   const execPara =
-    `Based on inputs to the Steripath Impact Analysis, over ${period} ${period === 1 ? "month" : "months"}, implementing Steripath® at ${util} utilization ` +
-    `may reduce the contamination rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, which may translate to the following estimated benefits:`;
+    `Based on the inputs provided, implementing Steripath® at ${util} utilization over a ${period}-${period === 1 ? "month" : "month"} period may reduce the contamination rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, which translates to the following estimated benefits:`;
 
   // Title — left-aligned, bold, prominent
   doc.setTextColor(...blue);
