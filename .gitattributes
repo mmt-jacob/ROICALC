@@ -1,0 +1,25 @@
+# Treat all files as text by default (normalize line endings)
+* text=auto
+
+# Binary files — never apply line-ending conversion
+*.pdf    binary
+*.pptx   binary
+*.ppt    binary
+*.docx   binary
+*.doc    binary
+*.xlsx   binary
+*.xls    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.eot    binary
+*.zip    binary
+*.gz     binary
+*.mp4    binary
+*.mp3    binary

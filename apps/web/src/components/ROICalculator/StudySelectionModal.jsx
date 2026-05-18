@@ -70,7 +70,7 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   return draft;
 }
 
-const STUDIES_SEP = "\n\n---\nAlso attached for your reference:";
+const STUDIES_SEP = "\n\n---\nAlso attached are supporting studies:";
 const SIGN_OFF = "\n\nBest regards,";
 
 function buildStudiesMention(studies) {

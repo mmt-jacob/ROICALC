@@ -134,11 +134,8 @@ async function blobToBase64(blob) {
 
 async function urlToBase64(url) {
   const res = await fetch(encodeURI(url));
-  const buf = await res.arrayBuffer();
-  const bytes = new Uint8Array(buf);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
+  const blob = await res.blob();
+  return blobToBase64(blob);
 }
 
 export async function sendEmailViaGraph({ accessToken, to, subject, bodyText, pdfBlob, pdfName, studies }) {
