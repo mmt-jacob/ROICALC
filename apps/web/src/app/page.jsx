@@ -455,6 +455,8 @@ export default function ROICalculator() {
           inputs={pdfInputs}
           isSending={isEmailingPDF}
           signedInEmail={signedInEmail}
+          compareA={compareA}
+          compareB={compareB}
         />
       )}
       <Header

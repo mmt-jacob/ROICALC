@@ -172,7 +172,7 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
                 >
                   <div className={`font-bold text-[#151F26] leading-snug ${isMobile ? "text-xs" : "text-base"}`}>Change</div>
                   {!isMobile && (
-                    <div className="text-sm text-slate-400 font-normal mt-1 leading-snug">vs. selected baseline</div>
+                    <div className="text-sm text-slate-400 font-normal mt-1 leading-snug">vs. {scenA.label}</div>
                   )}
                 </th>
               </tr>

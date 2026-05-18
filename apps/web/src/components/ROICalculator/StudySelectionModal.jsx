@@ -29,18 +29,19 @@ function fmtN(n) {
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
 
-function buildDraft({ calculations, hospitalName, showBestScenario, period, inputs }) {
-  const { baseline, current } = calculations;
+function buildDraft({ calculations, hospitalName, showBestScenario, period, inputs, compareA = "baseline", compareB = "current" }) {
+  const scenA = calculations[compareA] || calculations.baseline;
+  const scenB = calculations[compareB] || calculations.current;
 
-  const contamAvoided = Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0));
-  const costAvoidance = Math.max(0, (baseline.totalCost || 0) - (current.totalCost || 0));
-  const bedDays = Math.max(0, current.bedDaysFreed || 0);
+  const contamAvoided = Math.max(0, (scenA.contaminations || 0) - (scenB.contaminations || 0));
+  const costAvoidance = Math.max(0, (scenA.totalCost || 0) - (scenB.totalCost || 0));
+  const bedDays = Math.max(0, scenB.bedDaysFreed || 0);
   const mortalityReduction = Math.round(contamAvoided * 0.034);
 
-  const baselineDev = baseline.deviceCost || 0;
-  const steripathDev = current.deviceCost || 0;
+  const baselineDev = scenA.deviceCost || 0;
+  const steripathDev = scenB.deviceCost || 0;
   const deviceInvestment = Math.max(0, steripathDev - baselineDev) || steripathDev;
-  const grossSavings = Math.max(0, (baseline.contaminationCost || 0) - (current.contaminationCost || 0));
+  const grossSavings = Math.max(0, (scenA.contaminationCost || 0) - (scenB.contaminationCost || 0));
   const per = Number(period) || 12;
   const paybackMonths =
     deviceInvestment > 0 && grossSavings > 0
@@ -48,11 +49,10 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
       : null;
 
   const facilityPhrase = hospitalName ? `for ${hospitalName}` : "for your facility";
-  const utilPct = inputs?.steripathUtilization != null
-    ? `${Number(inputs.steripathUtilization).toFixed(0)}%`
-    : "current";
-  const baselineRateFmt = `${(Number(inputs?.baselineRate) || 0).toFixed(2)}%`;
-  const currentRateFmt  = `${(Number(calculations?.current?.blendedRate) || 0).toFixed(2)}%`;
+  const rawUtil = compareB === "best" ? inputs?.bestSteripathUtilization : inputs?.steripathUtilization;
+  const utilPct = rawUtil != null ? `${Number(rawUtil).toFixed(0)}%` : "current";
+  const baselineRateFmt = `${(Number(scenA.blendedRate) || 0).toFixed(2)}%`;
+  const currentRateFmt  = `${(Number(scenB.blendedRate) || 0).toFixed(2)}%`;
 
   let draft = `Hi,\n\nThank you for your time today. I wanted to share the results of the Steripath® Impact Analysis ${facilityPhrase}.\n\n`;
   draft += `Based on our analysis, implementing Steripath® at ${utilPct} utilization may reduce contamination rates from ${baselineRateFmt} to ${currentRateFmt}, which translates to the following estimated benefits:\n\n`;
@@ -161,6 +161,8 @@ export function StudySelectionModal({
   inputs,
   isSending,
   signedInEmail,
+  compareA = "baseline",
+  compareB = "current",
 }) {
   const [selected, setSelected] = useState(new Set());
   const [recipientTags, setRecipientTags] = useState([]);
@@ -170,7 +172,7 @@ export function StudySelectionModal({
   );
 
   const initialDraft = useMemo(
-    () => buildDraft({ calculations, hospitalName, showBestScenario, period, inputs }),
+    () => buildDraft({ calculations, hospitalName, showBestScenario, period, inputs, compareA, compareB }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
