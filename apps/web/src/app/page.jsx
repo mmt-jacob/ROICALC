@@ -15,6 +15,7 @@ import { StudySelectionModal, STUDIES } from "@/components/ROICalculator/StudySe
 import {
   acquireGraphToken,
   acquireGraphTokenSilent,
+  handlePostRedirect,
   sendEmailViaGraph,
   getSignedInAccount,
   warmUpAuth,
@@ -117,8 +118,9 @@ export default function ROICalculator() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // After a Microsoft login redirect, auth-redirect.html caches the token then bounces back
-  // here. Check for a saved pending email and complete the send silently.
+  // After a Microsoft login redirect the app reloads at the root URL with ?code=...&state=...
+  // in the address bar. handlePostRedirect() processes that code, caches the token, and
+  // returns it directly — then we complete any pending email send.
   useEffect(() => {
     const pending = getPendingEmail();
     if (!pending) return;
@@ -128,7 +130,11 @@ export default function ROICalculator() {
     (async () => {
       setIsEmailingPDF(true);
       try {
-        const accessToken = await acquireGraphTokenSilent();
+        // Process the redirect response — this is what exchanges the auth code for a token.
+        const redirectResult = await handlePostRedirect();
+        if (cancelled) return;
+
+        const accessToken = redirectResult?.accessToken ?? await acquireGraphTokenSilent();
         if (cancelled) return;
         if (!accessToken) {
           clearPendingEmail();

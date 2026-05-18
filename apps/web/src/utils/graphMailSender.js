@@ -61,14 +61,31 @@ export async function acquireGraphToken() {
     }
   }
 
-  // Redirect flow — stores PKCE in sessionStorage and navigates to Microsoft login.
-  // SessionStorage persists across same-tab navigations, so MSAL can complete the exchange
-  // when auth-redirect.html loads.
+  // Redirect flow — navigates the main window to Microsoft login. The app root is used
+  // as redirectUri so MSAL processes the response directly in the same page on return,
+  // avoiding the auth-redirect.html middleman that was swallowing the token.
   await msalInstance.acquireTokenRedirect({
     scopes: GRAPH_MAIL_SCOPES,
-    redirectUri: window.location.origin + "/auth-redirect.html",
+    redirectUri: window.location.origin,
   });
   return null; // Never reached; page is navigating
+}
+
+// Called on app startup after a redirect. Processes the auth code in the URL,
+// caches the token, and returns the result (or null if not a redirect callback).
+export async function handlePostRedirect() {
+  await ensureInitialized();
+  try {
+    const result = await msalInstance.handleRedirectPromise();
+    console.log("[PostRedirect] handleRedirectPromise result:", result ? "got token for " + result.account?.username : "null");
+    if (result?.account) {
+      msalInstance.setActiveAccount(result.account);
+    }
+    return result;
+  } catch (err) {
+    console.error("[PostRedirect] handleRedirectPromise error:", err);
+    return null;
+  }
 }
 
 // Silent-only token acquisition for the post-redirect completion path.

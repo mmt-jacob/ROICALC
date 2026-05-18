@@ -6,7 +6,9 @@ export const msalInstance = new PublicClientApplication({
   auth: {
     clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
     authority: "https://login.microsoftonline.com/dd1ca075-de8f-40c4-bebb-c90103860dba",
-    redirectUri: typeof window !== "undefined" ? `${window.location.origin}/auth-redirect.html` : "",
+    // Redirect URI is the app root — must also be registered as a SPA redirect URI
+    // in the Azure App Registration (id: bd1a125d-bb30-4d9e-9194-93a475450c82).
+    redirectUri: typeof window !== "undefined" ? window.location.origin : "",
   },
   cache: {
     cacheLocation: "localStorage",
@@ -15,5 +17,4 @@ export const msalInstance = new PublicClientApplication({
   },
 });
 
-// Initialize eagerly. We use popup mode only, so no handleRedirectPromise needed.
 msalInstance.initialize().catch(() => {});
