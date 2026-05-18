@@ -66,6 +66,12 @@ export async function acquireGraphToken() {
   console.log("[Auth] localStorage before popup:", Object.keys(localStorage));
   console.log("[Auth] sessionStorage before popup:", Object.keys(sessionStorage));
 
+  // Log what MSAL writes to storage 500ms after opening the popup (while user is signing in)
+  setTimeout(() => {
+    console.log("[Auth] localStorage 500ms after popup:", Object.keys(localStorage));
+    console.log("[Auth] sessionStorage 500ms after popup:", Object.keys(sessionStorage));
+  }, 500);
+
   const result = await msalInstance.acquireTokenPopup({
     scopes: GRAPH_MAIL_SCOPES,
     redirectUri: `${window.location.origin}/auth-redirect.html`,
