@@ -1,14 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Redirecting…</title>
+  <title>Signing in…</title>
   <meta charset="utf-8" />
-  <script>
-    // This page is no longer the MSAL redirect target.
-    // The app root (window.location.origin) handles the redirect directly.
-    // Redirect any stray visits back to the app.
-    window.location.replace(window.location.origin + "/");
-  </script>
 </head>
-<body></body>
+<body>
+  <script src="/msal-browser.min.js"></script>
+  <script>
+    console.log("[AuthRedirect] Loaded. search:", window.location.search.substring(0, 150));
+    console.log("[AuthRedirect] sessionStorage keys:", Object.keys(sessionStorage));
+    console.log("[AuthRedirect] localStorage MSAL keys:", Object.keys(localStorage).filter(k => k.includes("msal")));
+
+    // NOTE: No temporaryCacheLocation here — default is sessionStorage.
+    // MSAL v5 writes PKCE/request state to sessionStorage regardless of
+    // temporaryCacheLocation in the initiating page, so we must read from
+    // sessionStorage to find the matching verifier.
+    const msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: "bd1a125d-bb30-4d9e-9194-93a475450c82",
+        authority: "https://login.microsoftonline.com/dd1ca075-de8f-40c4-bebb-c90103860dba",
+        redirectUri: window.location.origin + "/auth-redirect.html",
+      },
+      cache: {
+        cacheLocation: "localStorage",
+        storeAuthStateInCookie: true,
+      },
+    });
+
+    msalInstance.initialize().then(() => {
+      console.log("[AuthRedirect] MSAL initialized. Calling handleRedirectPromise...");
+      return msalInstance.handleRedirectPromise();
+    }).then((result) => {
+      if (result) {
+        console.log("[AuthRedirect] Token acquired for:", result.account?.username);
+        console.log("[AuthRedirect] localStorage MSAL keys after:", Object.keys(localStorage).filter(k => k.includes("msal")));
+      } else {
+        console.warn("[AuthRedirect] handleRedirectPromise returned null — no auth code found.");
+      }
+      window.location.replace(window.location.origin + "/");
+    }).catch((err) => {
+      console.error("[AuthRedirect] Error:", err?.errorCode, err?.message);
+      window.location.replace(window.location.origin + "/");
+    });
+  </script>
+</body>
 </html>

@@ -70,12 +70,12 @@ export async function acquireGraphToken() {
       .forEach((k) => store.removeItem(k));
   });
 
-  // Redirect flow — navigates the main window to Microsoft login. The app root is used
-  // as redirectUri so MSAL processes the response directly in the same page on return,
-  // avoiding the auth-redirect.html middleman that was swallowing the token.
+  // Redirect flow — navigates to Microsoft login. auth-redirect.html is used as the
+  // redirect target because it has allowedRoles: ["anonymous"] in SWA, which prevents
+  // SWA's auth middleware from stripping the ?code=&state= params before MSAL sees them.
   await msalInstance.acquireTokenRedirect({
     scopes: GRAPH_MAIL_SCOPES,
-    redirectUri: window.location.origin,
+    redirectUri: `${window.location.origin}/auth-redirect.html`,
   });
   return null; // Never reached; page is navigating
 }
