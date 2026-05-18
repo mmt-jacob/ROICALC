@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { X, FileText, FileType, Mail, Send } from "lucide-react";
 
 export const STUDIES = [
@@ -68,6 +68,15 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   draft += `Best regards,`;
 
   return draft;
+}
+
+// Marker that separates the user-editable body from the auto-managed studies line.
+// We look for this string to replace only the studies portion when selection changes.
+const STUDIES_SEP = "\n\n---\nAlso attached for your reference:";
+
+function buildStudiesMention(studies) {
+  if (!studies.length) return "";
+  return STUDIES_SEP + "\n" + studies.map((s) => `  • ${s.label}`).join("\n");
 }
 
 function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
@@ -168,6 +177,16 @@ export function StudySelectionModal({
     []
   );
   const [emailBody, setEmailBody] = useState(initialDraft);
+
+  // Keep the studies mention at the bottom of the draft in sync with checkbox selection.
+  // Only the portion after STUDIES_SEP is replaced so user edits above are preserved.
+  useEffect(() => {
+    setEmailBody((prev) => {
+      const sepIdx = prev.indexOf(STUDIES_SEP);
+      const base = sepIdx >= 0 ? prev.slice(0, sepIdx) : prev;
+      return base + buildStudiesMention(STUDIES.filter((s) => selected.has(s.id)));
+    });
+  }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (id) =>
     setSelected((prev) => {
