@@ -7,6 +7,9 @@
 <body>
   <script src="/msal-browser.min.js"></script>
   <script>
+    console.log("[Auth Redirect] Loaded");
+    console.log("[Auth Redirect] Has opener:", !!window.opener);
+
     const msalInstance = new msal.PublicClientApplication({
       auth: {
         clientId: "bd1a125d-bb30-4d9e-9194-93a475450c82",
@@ -17,7 +20,15 @@
         cacheLocation: "sessionStorage",
       },
     });
-    msalInstance.initialize().then(() => msalInstance.handleRedirectPromise());
+
+    msalInstance.initialize().then(() => {
+      console.log("[Auth Redirect] MSAL initialized");
+      return msalInstance.handleRedirectPromise();
+    }).then((result) => {
+      console.log("[Auth Redirect] handleRedirectPromise result:", result);
+    }).catch((err) => {
+      console.error("[Auth Redirect] Error:", err);
+    });
   </script>
 </body>
 </html>
