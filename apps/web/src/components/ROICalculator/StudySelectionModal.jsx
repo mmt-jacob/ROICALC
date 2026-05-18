@@ -64,18 +64,23 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
     draft += `  • Estimated payback period: ${paybackMonths} month${paybackMonths !== 1 ? "s" : ""}\n`;
   }
 
-  draft += `\nI've attached the full Impact Analysis for your review. Happy to walk through the details and discuss next steps.\n\n`;
+  draft += `\nI've attached the full Impact Analysis for your review.\n\n`;
   draft += `Best regards,`;
 
   return draft;
 }
 
-const STUDIES_SEP = "\n\n---\nAlso attached are supporting studies:";
+const STUDIES_SEP = "\n\nAlso attached are supporting studies:";
 const SIGN_OFF = "\n\nBest regards,";
 
 function buildStudiesMention(studies) {
   if (!studies.length) return "";
-  return STUDIES_SEP + "\n" + studies.map((s) => `  • ${s.label}`).join("\n");
+  return (
+    STUDIES_SEP +
+    "\n" +
+    studies.map((s) => `  • ${s.label}`).join("\n") +
+    "\n\nHappy to walk through the details and discuss next steps."
+  );
 }
 
 function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
