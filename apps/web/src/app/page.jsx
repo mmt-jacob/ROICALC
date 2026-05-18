@@ -399,7 +399,7 @@ export default function ROICalculator() {
       alert("Email sent successfully!");
     } catch (err) {
       clearPendingEmail();
-      console.error("Error sending email:", err);
+      console.error("Error sending email — name:", err?.name, "| code:", err?.errorCode, "| message:", err?.message, "| full:", err);
       alert(`Unable to send email: ${err?.message || err?.errorCode || JSON.stringify(err)}`);
     } finally {
       setIsEmailingPDF(false);

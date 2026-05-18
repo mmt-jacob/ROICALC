@@ -61,6 +61,15 @@ export async function acquireGraphToken() {
     }
   }
 
+  // Clear any stale interaction/PKCE state left by previous failed attempts.
+  // With temporaryCacheLocation: "localStorage", these keys land in localStorage.
+  const tempPatterns = ["interaction", "request.", "pkce", "nonce.idtoken"];
+  [sessionStorage, localStorage].forEach((store) => {
+    Object.keys(store)
+      .filter((k) => tempPatterns.some((p) => k.toLowerCase().includes(p)))
+      .forEach((k) => store.removeItem(k));
+  });
+
   // Redirect flow — navigates the main window to Microsoft login. The app root is used
   // as redirectUri so MSAL processes the response directly in the same page on return,
   // avoiding the auth-redirect.html middleman that was swallowing the token.
