@@ -6,7 +6,7 @@ const SHOWPAD_LINK =
   "https://magnoliamedical.showpad.biz/webapp2/results?query=Tompkins%20&scope=content,shares&slug=346360c6-df7f-4695-986c-f148f49bf667&source=search-suggestions";
 
 const SHOWPAD_LINK_BED_DAYS =
-  "https://magnoliamedical.showpad.biz/webapp2/results?query=4,162&scope=content,shares&slug=ab7eabd8-85ee-4af3-8d06-7522b8ec4a5b&modalPage=8&source=search-suggestions";
+  "https://magnoliamedical.showpad.com/share/kUmaCzkrWqnmMqUXyhcRg";
 
 const SCENARIO_OPTIONS = [
   { value: "baseline", label: "Sc. 1 – Pre-Steripath® Baseline" },

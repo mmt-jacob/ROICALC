@@ -10,11 +10,11 @@ export const STUDIES = [
     file: "/studies/2023 Clinical Paper - University of Arkansas (Dare) .pdf",
   },
   {
-    id: "cardamom",
-    label: "Cardamom Study – Clinical Economic BCC Analysis",
-    description: "Clinical economic blood culture contamination analysis",
-    type: "pptx",
-    file: "/studies/Cardamom Study - Clinical Economic BCC Analysis Results - MKT-01016 .pptx",
+    id: "hospital-economic",
+    label: "Hospital Economic Implications of False Positive Blood Cultures",
+    description: "Economic impact analysis of false positive blood culture results",
+    type: "pdf",
+    file: "/studies/Hospital Economic Implications of False Positive Blood Cultures.pdf",
   },
 ];
 
