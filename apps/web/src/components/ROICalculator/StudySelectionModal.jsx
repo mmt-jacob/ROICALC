@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { X, FileText, FileType, Mail, Send } from "lucide-react";
 
 export const STUDIES = [
@@ -70,6 +70,75 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   return draft;
 }
 
+function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
+  const inputRef = useRef(null);
+
+  const commitInput = (raw) => {
+    const trimmed = raw.trim().replace(/,+$/, "").trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags((prev) => [...prev, trimmed]);
+    }
+    setInputValue("");
+  };
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    if (val.includes(",")) {
+      const parts = val.split(",");
+      parts.slice(0, -1).forEach((p) => commitInput(p));
+      setInputValue(parts[parts.length - 1]);
+    } else {
+      setInputValue(val);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && inputValue.trim()) {
+      e.preventDefault();
+      commitInput(inputValue);
+    } else if (e.key === "Backspace" && !inputValue && tags.length > 0) {
+      setTags((prev) => prev.slice(0, -1));
+    }
+  };
+
+  const handleBlur = () => {
+    if (inputValue.trim()) commitInput(inputValue);
+  };
+
+  return (
+    <div
+      className="w-full flex flex-wrap gap-1.5 bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-3 py-2 cursor-text focus-within:border-[#0061D5] focus-within:ring-2 focus-within:ring-[#0061D5]/10 min-h-[42px]"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {tags.map((tag, i) => (
+        <span
+          key={i}
+          className="flex items-center gap-1 bg-[#E2E8EF] text-[#334155] text-sm rounded-lg px-2.5 py-0.5 leading-snug"
+        >
+          {tag}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setTags((prev) => prev.filter((_, j) => j !== i)); }}
+            className="text-[#94A3B8] hover:text-[#334155] transition-colors ml-0.5 leading-none"
+          >
+            <X size={11} />
+          </button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputValue}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder={tags.length === 0 ? "name@hospital.com — press Enter or comma to add" : "Add another…"}
+        className="flex-1 min-w-[200px] bg-transparent text-sm text-[#151F26] outline-none py-0.5 placeholder:text-[#9AA1AA]"
+      />
+    </div>
+  );
+}
+
 function FileIcon({ type, size = 16 }) {
   if (type === "pptx") return <FileType size={size} className="text-[#C8511B] flex-shrink-0" />;
   return <FileText size={size} className="text-[#0842A6] flex-shrink-0" />;
@@ -87,7 +156,8 @@ export function StudySelectionModal({
   signedInEmail,
 }) {
   const [selected, setSelected] = useState(new Set());
-  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientTags, setRecipientTags] = useState([]);
+  const [recipientInput, setRecipientInput] = useState("");
   const [subject, setSubject] = useState(
     `Steripath® Impact Analysis${hospitalName ? ` — ${hospitalName}` : ""}`
   );
@@ -115,7 +185,11 @@ export function StudySelectionModal({
   };
 
   const selectedStudies = STUDIES.filter((s) => selected.has(s.id));
-  const canSend = recipientEmail.trim().length > 0 && !isSending;
+  const recipientEmail = [
+    ...recipientTags,
+    ...(recipientInput.trim() ? [recipientInput.trim()] : []),
+  ].join(", ");
+  const canSend = (recipientTags.length > 0 || recipientInput.trim().length > 0) && !isSending;
 
   return (
     <div
@@ -148,14 +222,13 @@ export function StudySelectionModal({
           {/* To field */}
           <div>
             <label className="text-xs font-semibold text-[#636D78] uppercase tracking-wider mb-2 block">
-              To <span className="normal-case font-normal text-[#9AA1AA]">— separate multiple with commas</span>
+              To
             </label>
-            <input
-              type="text"
-              value={recipientEmail}
-              onChange={(e) => setRecipientEmail(e.target.value)}
-              placeholder="recipient@hospital.com, another@hospital.com"
-              className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10"
+            <EmailTagInput
+              tags={recipientTags}
+              setTags={setRecipientTags}
+              inputValue={recipientInput}
+              setInputValue={setRecipientInput}
             />
           </div>
 
