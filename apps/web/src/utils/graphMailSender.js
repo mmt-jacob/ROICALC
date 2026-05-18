@@ -11,9 +11,11 @@ async function ensureInitialized() {
 }
 
 function clearInteractionLock() {
-  Object.keys(sessionStorage)
-    .filter((k) => k.toLowerCase().includes("interaction"))
-    .forEach((k) => sessionStorage.removeItem(k));
+  [sessionStorage, localStorage].forEach((store) => {
+    Object.keys(store)
+      .filter((k) => k.toLowerCase().includes("interaction"))
+      .forEach((k) => store.removeItem(k));
+  });
 }
 
 // Call this when the email modal opens — silently refreshes a cached token if one

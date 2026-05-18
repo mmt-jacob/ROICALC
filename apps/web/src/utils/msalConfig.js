@@ -9,7 +9,7 @@ export const msalInstance = new PublicClientApplication({
     redirectUri: typeof window !== "undefined" ? `${window.location.origin}/auth-redirect.html` : "",
   },
   cache: {
-    cacheLocation: "sessionStorage",
+    cacheLocation: "localStorage",
     storeAuthStateInCookie: false,
   },
 });
