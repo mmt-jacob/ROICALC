@@ -157,11 +157,10 @@ export default function ROICalculator() {
           compareB: pending.compareB,
         });
 
-        const subject = `Steripath® Impact Analysis${pending.hospitalName ? ` — ${pending.hospitalName}` : ""}`;
         await sendEmailViaGraph({
           accessToken,
           to: pending.recipientEmail,
-          subject,
+          subject: pending.subject,
           bodyText: pending.emailBody,
           pdfBlob: blob,
           pdfName: fileName,
@@ -353,7 +352,7 @@ export default function ROICalculator() {
   const handleEmailPDF = () => { setShowStudyModal(true); warmUpAuth(); };
 
   // Called when the user confirms the modal
-  const handleEmailPDFConfirm = async (selectedStudies, emailBody, recipientEmail) => {
+  const handleEmailPDFConfirm = async (selectedStudies, emailBody, recipientEmail, subject) => {
     setIsEmailingPDF(true);
 
     // Save the full send payload before acquiring a token — acquireGraphToken may
@@ -361,6 +360,7 @@ export default function ROICalculator() {
     savePendingEmail({
       recipientEmail,
       emailBody,
+      subject,
       selectedStudyIds: selectedStudies.map((s) => s.id),
       hospitalName,
       showBestScenario,
@@ -385,7 +385,6 @@ export default function ROICalculator() {
       const { blob, fileName } = await exportToPDF({
         inputs: pdfInputs, calculations, showBestScenario, hospitalName, returnBlob: true, compareA, compareB,
       });
-      const subject = `Steripath® Impact Analysis${hospitalName ? ` — ${hospitalName}` : ""}`;
       await sendEmailViaGraph({
         accessToken,
         to: recipientEmail,

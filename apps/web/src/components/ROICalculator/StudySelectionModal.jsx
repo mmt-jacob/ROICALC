@@ -88,6 +88,9 @@ export function StudySelectionModal({
 }) {
   const [selected, setSelected] = useState(new Set());
   const [recipientEmail, setRecipientEmail] = useState("");
+  const [subject, setSubject] = useState(
+    `Steripath® Impact Analysis${hospitalName ? ` — ${hospitalName}` : ""}`
+  );
 
   const initialDraft = useMemo(
     () => buildDraft({ calculations, hospitalName, showBestScenario, period, inputs }),
@@ -145,13 +148,26 @@ export function StudySelectionModal({
           {/* To field */}
           <div>
             <label className="text-xs font-semibold text-[#636D78] uppercase tracking-wider mb-2 block">
-              To
+              To <span className="normal-case font-normal text-[#9AA1AA]">— separate multiple with commas</span>
             </label>
             <input
-              type="email"
+              type="text"
               value={recipientEmail}
               onChange={(e) => setRecipientEmail(e.target.value)}
-              placeholder="recipient@hospital.com"
+              placeholder="recipient@hospital.com, another@hospital.com"
+              className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10"
+            />
+          </div>
+
+          {/* Subject field */}
+          <div>
+            <label className="text-xs font-semibold text-[#636D78] uppercase tracking-wider mb-2 block">
+              Subject
+            </label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
               className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10"
             />
           </div>
@@ -222,7 +238,7 @@ export function StudySelectionModal({
             {isSending ? "Abort" : "Cancel"}
           </button>
           <button
-            onClick={() => { console.log("Clicked send"); onConfirm(selectedStudies, emailBody, recipientEmail); }}
+            onClick={() => { console.log("Clicked send"); onConfirm(selectedStudies, emailBody, recipientEmail, subject); }}
             disabled={!canSend}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#0842A6] hover:bg-[#0B2D71] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
