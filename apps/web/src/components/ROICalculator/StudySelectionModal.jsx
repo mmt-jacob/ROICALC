@@ -73,7 +73,7 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
 // Shared prefix used to locate the attach line regardless of which variant is active
 const ATTACH_PREFIX = "\nI've attached the full Impact Analysis for your review";
 const ATTACH_PLAIN   = "\nI've attached the full Impact Analysis for your review.";
-const ATTACH_WITH_STUDIES = "\nI've attached the full Impact Analysis for your review, along with supporting clinical and economic studies:";
+const ATTACH_WITH_STUDIES = "\nI've attached the full Impact Analysis for your review, along with supporting clinical and economic studies.";
 const CLOSING  = "\n\nHappy to walk through the details and discuss next steps.";
 const SIGN_OFF = "\n\nBest regards,";
 
@@ -204,11 +204,7 @@ export function StudySelectionModal({
         return before + ATTACH_PLAIN + "\n\n" + after;
       }
 
-      const studiesBlock =
-        ATTACH_WITH_STUDIES +
-        "\n" +
-        studies.map((s) => `  • ${s.label}`).join("\n") +
-        CLOSING;
+      const studiesBlock = ATTACH_WITH_STUDIES + CLOSING;
 
       return before + studiesBlock + "\n\n" + after;
     });
