@@ -9,6 +9,10 @@
       "rewrite": "/.auth/logout"
     },
     {
+      "route": "/auth-redirect.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/*",
       "allowedRoles": ["authenticated"]
     }
