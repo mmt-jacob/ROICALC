@@ -133,7 +133,7 @@ async function blobToBase64(blob) {
 }
 
 async function urlToBase64(url) {
-  const res = await fetch(url);
+  const res = await fetch(encodeURI(url));
   const buf = await res.arrayBuffer();
   const bytes = new Uint8Array(buf);
   let binary = "";

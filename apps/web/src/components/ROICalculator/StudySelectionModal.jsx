@@ -70,9 +70,8 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   return draft;
 }
 
-// Marker that separates the user-editable body from the auto-managed studies line.
-// We look for this string to replace only the studies portion when selection changes.
 const STUDIES_SEP = "\n\n---\nAlso attached for your reference:";
+const SIGN_OFF = "\n\nBest regards,";
 
 function buildStudiesMention(studies) {
   if (!studies.length) return "";
@@ -177,14 +176,35 @@ export function StudySelectionModal({
     []
   );
   const [emailBody, setEmailBody] = useState(initialDraft);
+  const textareaRef = useRef(null);
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [emailBody]);
 
-  // Keep the studies mention at the bottom of the draft in sync with checkbox selection.
-  // Only the portion after STUDIES_SEP is replaced so user edits above are preserved.
+  // Keep the studies mention in sync with checkbox selection, placed before sign-off.
+  // Strips any existing studies block first so user edits above are preserved.
   useEffect(() => {
     setEmailBody((prev) => {
+      // Remove existing studies block if present
       const sepIdx = prev.indexOf(STUDIES_SEP);
-      const base = sepIdx >= 0 ? prev.slice(0, sepIdx) : prev;
-      return base + buildStudiesMention(STUDIES.filter((s) => selected.has(s.id)));
+      let base;
+      if (sepIdx >= 0) {
+        const soAfter = prev.indexOf(SIGN_OFF, sepIdx);
+        base = prev.slice(0, sepIdx) + (soAfter >= 0 ? prev.slice(soAfter) : "");
+      } else {
+        base = prev;
+      }
+      const studies = STUDIES.filter((s) => selected.has(s.id));
+      if (!studies.length) return base;
+      // Insert before sign-off
+      const soIdx = base.lastIndexOf(SIGN_OFF);
+      const mention = buildStudiesMention(studies);
+      return soIdx >= 0
+        ? base.slice(0, soIdx) + mention + base.slice(soIdx)
+        : base + mention;
     });
   }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -270,10 +290,10 @@ export function StudySelectionModal({
               Email Body
             </p>
             <textarea
+              ref={textareaRef}
               value={emailBody}
               onChange={(e) => setEmailBody(e.target.value)}
-              rows={14}
-              className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-3 resize-y focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10 leading-relaxed font-mono"
+              className="w-full text-sm text-[#151F26] bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-4 py-3 resize-none overflow-hidden focus:outline-none focus:border-[#0061D5] focus:ring-2 focus:ring-[#0061D5]/10 leading-relaxed font-mono"
               spellCheck
             />
           </div>
