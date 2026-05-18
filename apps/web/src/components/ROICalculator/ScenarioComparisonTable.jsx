@@ -45,7 +45,7 @@ function fmtDelta(delta, { isCurrency, isRate }) {
   return `${sign}${formatNumber(Math.round(abs))}`;
 }
 
-function MetricRow({ label, sublabel, values, rowIndex, compareA, compareB, isCurrency, isRate, isAvoidance, hideBaseline, isMobile }) {
+function MetricRow({ label, sublabel, values, rowIndex, compareA, compareB, isCurrency, isRate, isAvoidance, hideBaseline, isMobile, positiveIsGood, noColor }) {
   const rowDef = { isCurrency, isRate, isAvoidance, hideBaseline };
   const valA = values[compareA] ?? null;
   const valB = values[compareB] ?? null;
@@ -55,7 +55,16 @@ function MetricRow({ label, sublabel, values, rowIndex, compareA, compareB, isCu
   const delta = numB - numA;
   const deltaStr = fmtDelta(delta, rowDef);
 
-  const cellCls = `text-center border-b border-[#CBCFD3] align-middle font-bold ${isMobile ? "py-2 px-3 text-sm" : "py-3 px-5 text-base"} text-[#151F26]`;
+  const baseCellCls = `text-center border-b border-[#CBCFD3] align-middle font-bold ${isMobile ? "py-2 px-3 text-sm" : "py-3 px-5 text-base"}`;
+  const cellCls = baseCellCls + " text-[#151F26]";
+
+  let deltaColor;
+  if (noColor || deltaStr === "—") {
+    deltaColor = "text-[#9AA1AA]";
+  } else {
+    const isGood = positiveIsGood ? delta > 0 : delta < 0;
+    deltaColor = isGood ? "text-green-600" : "text-red-600";
+  }
 
   return (
     <tr className={rowIndex % 2 === 0 ? "bg-white" : "bg-[#F2F6F7]"}>
@@ -67,7 +76,7 @@ function MetricRow({ label, sublabel, values, rowIndex, compareA, compareB, isCu
       </td>
       <td className={cellCls}>{fmtValue(valA, compareA, rowDef)}</td>
       <td className={cellCls}>{fmtValue(valB, compareB, rowDef)}</td>
-      <td className={cellCls}>{deltaStr}</td>
+      <td className={baseCellCls + " " + deltaColor}>{deltaStr}</td>
     </tr>
   );
 }
@@ -86,19 +95,19 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
       label: "Avoided Contamination Events",
       sublabel: "False-positive cultures avoided vs. Pre-Steripath® Baseline",
       values: { baseline: 0, current: Math.max(0, baseline.contaminations - current.contaminations), best: Math.max(0, baseline.contaminations - best.contaminations) },
-      isAvoidance: true,
+      isAvoidance: true, positiveIsGood: true,
     },
     {
       label: "Blended Contamination Rate",
       sublabel: "Contamination rate weighted by Utilization Rate",
       values: { baseline: baseline.blendedRate, current: current.blendedRate, best: best.blendedRate },
-      isRate: true,
+      isRate: true, positiveIsGood: false,
     },
     {
       label: "Cost of Contaminations",
       sublabel: "Direct cost burden from false-positive cultures",
       values: { baseline: baseline.contaminationCost, current: current.contaminationCost, best: best.contaminationCost },
-      isCurrency: true,
+      isCurrency: true, positiveIsGood: false,
     },
     {
       label: "Device Investment",
@@ -106,19 +115,19 @@ export function ScenarioComparisonTable({ calculations, showBestScenario = true,
       values: { baseline: inputs.baselineHasAltProduct ? baseline.deviceCost : 0, current: current.deviceCost, best: best.deviceCost },
       isCurrency: true,
       hideBaseline: !inputs.baselineHasAltProduct,
+      noColor: true,
     },
     {
       label: "Total Hospital Cost",
       sublabel: "Contamination costs + device investment combined",
       values: { baseline: baseline.totalCost, current: current.totalCost, best: best.totalCost },
-      isCurrency: true,
+      isCurrency: true, positiveIsGood: false,
     },
     {
       label: "Net Savings",
       sublabel: "Cost avoided relative to Pre-Steripath® Baseline, after device investment",
       values: { baseline: 0, current: current.netSavings, best: best.netSavings },
-      isAvoidance: true,
-      isCurrency: true,
+      isAvoidance: true, isCurrency: true, positiveIsGood: true,
     },
   ];
 

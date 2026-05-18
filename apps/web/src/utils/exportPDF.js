@@ -344,19 +344,19 @@ export async function exportToPDF({
         current:  Math.max(0, (baseline.contaminations || 0) - (current.contaminations || 0)),
         best:     Math.max(0, (baseline.contaminations || 0) - (best.contaminations || 0)),
       },
-      isCurrency: false, isRate: false, isAvoidance: true,
+      isCurrency: false, isRate: false, isAvoidance: true, positiveIsGood: true,
     },
     {
       label:    "Blended Contamination Rate",
       sublabel: "Contamination rate weighted by Utilization Rate",
       vals: { baseline: baseline.blendedRate, current: current.blendedRate, best: best.blendedRate },
-      isCurrency: false, isRate: true, isAvoidance: false,
+      isCurrency: false, isRate: true, isAvoidance: false, positiveIsGood: false,
     },
     {
       label:    "Cost of Contaminations",
       sublabel: "Direct cost burden from false-positive cultures",
       vals: { baseline: baseline.contaminationCost, current: current.contaminationCost, best: best.contaminationCost },
-      isCurrency: true, isRate: false, isAvoidance: false,
+      isCurrency: true, isRate: false, isAvoidance: false, positiveIsGood: false,
     },
     {
       label:    "Device Investment",
@@ -367,19 +367,19 @@ export async function exportToPDF({
         best:     best.deviceCost,
       },
       isCurrency: true, isRate: false, isAvoidance: false,
-      hideBaseline: !inputs.baselineHasAltProduct,
+      hideBaseline: !inputs.baselineHasAltProduct, noColor: true,
     },
     {
       label:    "Total Hospital Cost",
       sublabel: "Contamination costs + device investment",
       vals: { baseline: baseline.totalCost, current: current.totalCost, best: best.totalCost },
-      isCurrency: true, isRate: false, isAvoidance: false,
+      isCurrency: true, isRate: false, isAvoidance: false, positiveIsGood: false,
     },
     {
       label:    "Net Savings",
       sublabel: "Cost avoided relative to Pre-Steripath® Baseline, after device investment",
       vals: { baseline: 0, current: current.netSavings, best: best.netSavings },
-      isCurrency: true, isRate: false, isAvoidance: true,
+      isCurrency: true, isRate: false, isAvoidance: true, positiveIsGood: true,
     },
   ];
 
@@ -406,12 +406,30 @@ export async function exportToPDF({
     return `${sign}${fmtN(Math.round(abs))}`;
   };
 
-  const tBody = tableRowDefs.map((def) => [
-    def.label,
-    fmtCell(def.vals[compareA], compareA, def),
-    fmtCell(def.vals[compareB], compareB, def),
-    fmtDeltaCell(def),
-  ]);
+  const getDeltaColor = (def) => {
+    if (def.noColor) return null;
+    const aIsHidden = (def.hideBaseline && compareA === "baseline") || (def.isAvoidance && compareA === "baseline");
+    const numA = aIsHidden ? 0 : (Number(def.vals[compareA]) || 0);
+    const numB = Number(def.vals[compareB]) || 0;
+    const delta = numB - numA;
+    const threshold = def.isRate ? 0.001 : 0.5;
+    if (Math.abs(delta) < threshold) return null;
+    const isGood = def.positiveIsGood ? delta > 0 : delta < 0;
+    return isGood ? [22, 163, 74] : [220, 38, 38];
+  };
+
+  const mutedGray = [154, 161, 170];
+
+  const tBody = tableRowDefs.map((def) => {
+    const deltaStr = fmtDeltaCell(def);
+    const deltaColor = getDeltaColor(def);
+    return [
+      def.label,
+      fmtCell(def.vals[compareA], compareA, def),
+      fmtCell(def.vals[compareB], compareB, def),
+      { content: deltaStr, styles: { textColor: deltaColor ?? mutedGray } },
+    ];
+  });
 
   const bodyCellH = 13;
   const labelColW = 56;
