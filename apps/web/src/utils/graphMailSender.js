@@ -69,6 +69,7 @@ export async function acquireGraphToken() {
   const result = await msalInstance.acquireTokenPopup({
     scopes: GRAPH_MAIL_SCOPES,
     redirectUri: `${window.location.origin}/auth-redirect.html`,
+    prompt: "select_account",
   });
   console.log("[Auth] Popup result:", result);
   console.log("[Auth] Result account:", result.account);

@@ -25,7 +25,14 @@
 
     const msalKeys = Object.keys(localStorage).filter(k => k.includes("msal"));
     console.log("[Auth Redirect] localStorage MSAL keys:", msalKeys);
-    console.log("[Auth Redirect] URL state:", new URLSearchParams(window.location.search).get("state"));
+    console.log("[Auth Redirect] sessionStorage keys:", Object.keys(sessionStorage));
+    console.log("[Auth Redirect] search:", window.location.search);
+    console.log("[Auth Redirect] hash:", window.location.hash.substring(0, 200));
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const hasCode = searchParams.has("code") || hashParams.has("code");
+    const hasState = searchParams.has("state") || hashParams.has("state");
+    console.log("[Auth Redirect] hasCode:", hasCode, "hasState:", hasState);
 
     msalInstance.initialize().then(() => {
       console.log("[Auth Redirect] MSAL initialized");
