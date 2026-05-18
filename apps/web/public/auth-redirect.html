@@ -21,6 +21,10 @@
       },
     });
 
+    const msalKeys = Object.keys(localStorage).filter(k => k.includes("msal"));
+    console.log("[Auth Redirect] localStorage MSAL keys:", msalKeys);
+    console.log("[Auth Redirect] URL state:", new URLSearchParams(window.location.search).get("state"));
+
     msalInstance.initialize().then(() => {
       console.log("[Auth Redirect] MSAL initialized");
       return msalInstance.handleRedirectPromise();
