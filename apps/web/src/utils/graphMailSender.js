@@ -76,14 +76,18 @@ export async function acquireGraphToken() {
 export async function acquireGraphTokenSilent() {
   await ensureInitialized();
   const accounts = msalInstance.getAllAccounts();
+  console.log("[PostRedirect] accounts in cache:", accounts.map(a => a.username));
+  console.log("[PostRedirect] localStorage MSAL keys:", Object.keys(localStorage).filter(k => k.includes("msal")));
   if (accounts.length === 0) return null;
   try {
     const result = await msalInstance.acquireTokenSilent({
       scopes: GRAPH_MAIL_SCOPES,
       account: accounts[0],
     });
+    console.log("[PostRedirect] silent token acquired for:", result.account?.username);
     return result.accessToken;
-  } catch {
+  } catch (err) {
+    console.error("[PostRedirect] acquireTokenSilent failed:", err);
     return null;
   }
 }

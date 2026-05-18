@@ -7,6 +7,10 @@
 <body>
   <script src="/msal-browser.min.js"></script>
   <script>
+    console.log("[Auth Redirect] Loaded. URL:", window.location.href.substring(0, 200));
+    console.log("[Auth Redirect] sessionStorage keys:", Object.keys(sessionStorage));
+    console.log("[Auth Redirect] localStorage MSAL keys:", Object.keys(localStorage).filter(k => k.includes("msal")));
+
     const msalInstance = new msal.PublicClientApplication({
       auth: {
         clientId: "bd1a125d-bb30-4d9e-9194-93a475450c82",
@@ -15,17 +19,20 @@
       },
       cache: {
         cacheLocation: "localStorage",
+        temporaryCacheLocation: "localStorage",
         storeAuthStateInCookie: true,
       },
     });
 
     msalInstance.initialize().then(() => {
+      console.log("[Auth Redirect] MSAL initialized. Calling handleRedirectPromise...");
       return msalInstance.handleRedirectPromise();
-    }).then(() => {
-      // Token (if any) is now cached in localStorage. Return to the app.
+    }).then((result) => {
+      console.log("[Auth Redirect] handleRedirectPromise result:", result ? "got token for " + result.account?.username : "null");
+      console.log("[Auth Redirect] Accounts after:", msalInstance.getAllAccounts().map(a => a.username));
       window.location.replace(window.location.origin + "/");
     }).catch((err) => {
-      console.error("[Auth Redirect] Error:", err);
+      console.error("[Auth Redirect] Error in handleRedirectPromise:", err);
       window.location.replace(window.location.origin + "/");
     });
   </script>
