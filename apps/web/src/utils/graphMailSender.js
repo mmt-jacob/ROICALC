@@ -16,14 +16,19 @@ function clearInteractionLock() {
     .forEach((k) => sessionStorage.removeItem(k));
 }
 
-// Call this when the email modal opens — warms the MSAL cache via hidden iframe so that
-// acquireGraphToken can complete silently (no popup) when the user clicks Send.
+// Call this when the email modal opens — silently refreshes a cached token if one
+// exists. Does NOT use ssoSilent (hidden iframe) because Azure SWA's cross-origin
+// iframe sandboxing blocks that flow. Fresh logins are handled by acquireTokenPopup
+// when the user clicks Send.
 export async function warmUpAuth() {
   try {
     await ensureInitialized();
     const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) return; // already have a cached account, nothing to do
-    await msalInstance.ssoSilent({ scopes: GRAPH_MAIL_SCOPES });
+    if (accounts.length === 0) return; // no cached account — nothing to do
+    await msalInstance.acquireTokenSilent({
+      scopes: GRAPH_MAIL_SCOPES,
+      account: accounts[0],
+    });
   } catch {
     // Silently ignored — warmup is best-effort
   }
