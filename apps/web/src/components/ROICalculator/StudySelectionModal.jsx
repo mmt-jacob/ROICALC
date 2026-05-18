@@ -222,7 +222,7 @@ export function StudySelectionModal({
             {isSending ? "Abort" : "Cancel"}
           </button>
           <button
-            onClick={() => onConfirm(selectedStudies, emailBody, recipientEmail)}
+            onClick={() => { console.log("Clicked send"); onConfirm(selectedStudies, emailBody, recipientEmail); }}
             disabled={!canSend}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#0842A6] hover:bg-[#0B2D71] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >

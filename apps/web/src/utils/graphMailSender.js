@@ -37,6 +37,7 @@ export async function warmUpAuth() {
 export async function acquireGraphToken() {
   await ensureInitialized();
   const accounts = msalInstance.getAllAccounts();
+  console.log("Accounts:", accounts);
 
   // 1. Cached token — fully silent, no network call
   if (accounts.length > 0) {
@@ -45,6 +46,7 @@ export async function acquireGraphToken() {
         scopes: GRAPH_MAIL_SCOPES,
         account: accounts[0],
       });
+      console.log("Token acquired (silent):", result);
       return result.accessToken;
     } catch (err) {
       if (!(err instanceof InteractionRequiredAuthError)) throw err;
@@ -54,12 +56,14 @@ export async function acquireGraphToken() {
   // 2. Popup — must be called directly within a user gesture to avoid browser blocking
   try {
     const result = await msalInstance.acquireTokenPopup({ scopes: GRAPH_MAIL_SCOPES });
+    console.log("Token acquired (popup):", result);
     return result.accessToken;
   } catch (err) {
     // A previous popup was abandoned and left an interaction lock — clear it and retry once
     if (err instanceof BrowserAuthError && err.errorCode === "interaction_in_progress") {
       clearInteractionLock();
       const result = await msalInstance.acquireTokenPopup({ scopes: GRAPH_MAIL_SCOPES });
+      console.log("Token acquired (popup retry):", result);
       return result.accessToken;
     }
     throw err;
@@ -126,6 +130,7 @@ export async function sendEmailViaGraph({ accessToken, to, subject, bodyText, pd
     attachments,
   };
 
+  console.log("Calling Graph...");
   const res = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
     method: "POST",
     headers: {
@@ -134,6 +139,7 @@ export async function sendEmailViaGraph({ accessToken, to, subject, bodyText, pd
     },
     body: JSON.stringify({ message }),
   });
+  console.log("Email API response:", res.status, res.statusText);
 
   if (!res.ok) {
     const text = await res.text();

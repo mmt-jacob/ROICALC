@@ -1,5 +1,23 @@
 <!DOCTYPE html>
 <html>
-<head><title>Signing in...</title></head>
-<body>Signing in...</body>
+<head>
+  <title>Signing in…</title>
+  <meta charset="utf-8" />
+</head>
+<body>
+  <script src="https://unpkg.com/@azure/msal-browser@5.10.1/lib/msal-browser.min.js"></script>
+  <script>
+    const msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: "bd1a125d-bb30-4d9e-9194-93a475450c82",
+        authority: "https://login.microsoftonline.com/dd1ca075-de8f-40c4-bebb-c90103860dba",
+        redirectUri: window.location.origin + "/auth-redirect.html",
+      },
+      cache: {
+        cacheLocation: "sessionStorage",
+      },
+    });
+    msalInstance.initialize().then(() => msalInstance.handleRedirectPromise());
+  </script>
+</body>
 </html>
