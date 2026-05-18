@@ -154,11 +154,15 @@ export async function exportToPDF({
   }
 
   // ── EXECUTIVE SUMMARY ──────────────────────────────────────────────────────
-  const currentRateDisplay = isBlended
-    ? fmtP(current.blendedRate)
-    : fmtP(inputs.currentSteripathRate);
+  const isBestB = compareB === "best";
+  const util = isBestB
+    ? fmtP(inputs.bestSteripathUtilization, 0)
+    : fmtP(inputs.steripathUtilization, 0);
+  const toRateDisplay = isBlended
+    ? fmtP(scenCalcB.blendedRate)
+    : isBestB ? fmtP(inputs.bestSteripathRate) : fmtP(inputs.currentSteripathRate);
+  const fromRateDisplay = fmtP(scenCalcA.blendedRate);
 
-  const util           = fmtP(inputs.steripathUtilization, 0);
   const period         = Number(inputs.period) || 12;
   const grossContamSavings = (scenCalcA.contaminationCost || 0) - (scenCalcB.contaminationCost || 0);
   const pdfPaybackMonths   = (scenCalcB.deviceCost || 0) > 0 && grossContamSavings > 0
@@ -166,8 +170,9 @@ export async function exportToPDF({
   const pdfPaybackRounded  = Math.round(pdfPaybackMonths ?? 0);
   const hidePayback        = compareA === "best" || compareB === "best";
 
-  const execPara =
-    `Based on the inputs provided, implementing Steripath® at ${util} utilization over a ${period}-${period === 1 ? "month" : "month"} period may reduce the contamination rate from ${fmtP(inputs.baselineRate)} to ${currentRateDisplay}, which translates to the following estimated benefits:`;
+  const execPara = isBestB
+    ? `Based on the inputs provided, increasing Steripath® utilization to ${util} over a ${period}-month period may reduce the contamination rate from ${fromRateDisplay} to ${toRateDisplay}, which translates to the following estimated benefits:`
+    : `Based on the inputs provided, implementing Steripath® at ${util} utilization over a ${period}-month period may reduce the contamination rate from ${fromRateDisplay} to ${toRateDisplay}, which translates to the following estimated benefits:`;
 
   // Title — left-aligned, bold, prominent
   doc.setTextColor(...blue);

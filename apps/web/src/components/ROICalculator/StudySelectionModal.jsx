@@ -54,13 +54,18 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
   const baselineRateFmt = `${(Number(scenA.blendedRate) || 0).toFixed(2)}%`;
   const currentRateFmt  = `${(Number(scenB.blendedRate) || 0).toFixed(2)}%`;
 
+  const isBest = compareB === "best";
+  const actionPhrase = isBest
+    ? `increasing Steripath® utilization to ${utilPct}`
+    : `implementing Steripath® at ${utilPct} utilization`;
+
   let draft = `Hi,\n\nThank you for your time today. I wanted to share the results of the Steripath® Impact Analysis ${facilityPhrase}.\n\n`;
-  draft += `Based on our analysis, implementing Steripath® at ${utilPct} utilization may reduce contamination rates from ${baselineRateFmt} to ${currentRateFmt}, which translates to the following estimated benefits:\n\n`;
+  draft += `Based on our analysis, ${actionPhrase} may reduce contamination rates from ${baselineRateFmt} to ${currentRateFmt}, which translates to the following estimated benefits:\n\n`;
   draft += `  • Contaminations avoided: ${fmtN(contamAvoided)} events\n`;
   draft += `  • Bed days freed: ${fmtN(bedDays)}\n`;
   draft += `  • Potential mortalities avoided: ${fmtN(mortalityReduction)} patients\n`;
   draft += `  • Net cost avoidance: ${fmt$(costAvoidance)}\n`;
-  if (paybackMonths !== null) {
+  if (paybackMonths !== null && !isBest) {
     draft += `  • Estimated payback period: ${paybackMonths} month${paybackMonths !== 1 ? "s" : ""}\n`;
   }
 
