@@ -1,4 +1,4 @@
-import { InteractionRequiredAuthError, BrowserAuthError } from "@azure/msal-browser";
+import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import { msalInstance, GRAPH_MAIL_SCOPES } from "./msalConfig";
 
 let initialized = false;
@@ -10,10 +10,14 @@ async function ensureInitialized() {
   }
 }
 
-function clearInteractionLock() {
+function clearMsalTempState() {
+  // Remove temporary MSAL keys that get left behind by failed auth attempts.
+  // These cause acquireTokenPopup to open a silent cleanup popup instead of
+  // going to Microsoft login. Account/token cache keys are left intact.
+  const tempPatterns = ["interaction", "request.", "pkce", "nonce.idtoken"];
   [sessionStorage, localStorage].forEach((store) => {
     Object.keys(store)
-      .filter((k) => k.toLowerCase().includes("interaction"))
+      .filter((k) => tempPatterns.some((p) => k.toLowerCase().includes(p)))
       .forEach((k) => store.removeItem(k));
   });
 }
@@ -55,39 +59,22 @@ export async function acquireGraphToken() {
     }
   }
 
-  // 2. Popup — must be called directly within a user gesture to avoid browser blocking
-  try {
-    console.log("[Auth] Before popup accounts:", msalInstance.getAllAccounts());
-    console.log("[Auth] localStorage before popup:", Object.keys(localStorage));
-    console.log("[Auth] sessionStorage before popup:", Object.keys(sessionStorage));
-    const result = await msalInstance.acquireTokenPopup({
-      scopes: GRAPH_MAIL_SCOPES,
-      redirectUri: `${window.location.origin}/auth-redirect.html`,
-    });
-    console.log("[Auth] Popup result:", result);
-    console.log("[Auth] Result account:", result.account);
-    console.log("[Auth] After popup accounts:", msalInstance.getAllAccounts());
-    console.log("Token acquired (popup):", result);
-    return result.accessToken;
-  } catch (err) {
-    // A previous popup was abandoned and left an interaction lock — clear it and retry once
-    if (err instanceof BrowserAuthError && err.errorCode === "interaction_in_progress") {
-      clearInteractionLock();
-      console.log("[Auth] Before popup retry accounts:", msalInstance.getAllAccounts());
-      console.log("[Auth] localStorage before retry:", Object.keys(localStorage));
-      console.log("[Auth] sessionStorage before retry:", Object.keys(sessionStorage));
-      const result = await msalInstance.acquireTokenPopup({
-        scopes: GRAPH_MAIL_SCOPES,
-        redirectUri: `${window.location.origin}/auth-redirect.html`,
-      });
-      console.log("[Auth] Popup retry result:", result);
-      console.log("[Auth] Result account:", result.account);
-      console.log("[Auth] After popup retry accounts:", msalInstance.getAllAccounts());
-      console.log("Token acquired (popup retry):", result);
-      return result.accessToken;
-    }
-    throw err;
-  }
+  // 2. Popup — clear any stale temp state first so MSAL doesn't open a cleanup
+  //    popup instead of going to Microsoft login
+  clearMsalTempState();
+  console.log("[Auth] Before popup accounts:", msalInstance.getAllAccounts());
+  console.log("[Auth] localStorage before popup:", Object.keys(localStorage));
+  console.log("[Auth] sessionStorage before popup:", Object.keys(sessionStorage));
+
+  const result = await msalInstance.acquireTokenPopup({
+    scopes: GRAPH_MAIL_SCOPES,
+    redirectUri: `${window.location.origin}/auth-redirect.html`,
+  });
+  console.log("[Auth] Popup result:", result);
+  console.log("[Auth] Result account:", result.account);
+  console.log("[Auth] After popup accounts:", msalInstance.getAllAccounts());
+  console.log("Token acquired (popup):", result);
+  return result.accessToken;
 }
 
 export function getSignedInAccount() {
