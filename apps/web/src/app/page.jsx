@@ -48,7 +48,7 @@ export default function ROICalculator() {
   const [hospitalName, setHospitalName] = useState("");
 
   // Session-level settings
-  const [isCurrentCustomer, setIsCurrentCustomer] = useState(true);
+  const [isCurrentCustomer, setIsCurrentCustomer] = useState(false);
   const [globalRateMode, setGlobalRateMode] = useState("blended"); // "blended" | "device"
 
   // General Assumptions
