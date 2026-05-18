@@ -69,7 +69,7 @@ function buildDraft({ calculations, hospitalName, showBestScenario, period, inpu
     draft += `  • Estimated payback period: ${paybackMonths} month${paybackMonths !== 1 ? "s" : ""}\n`;
   }
 
-  draft += `\nI've attached the full Impact Analysis for your review.\n\n`;
+  draft += ATTACH_PLAIN + CLOSING + "\n\n";
   draft += `Best regards,`;
 
   return draft;
@@ -208,7 +208,7 @@ export function StudySelectionModal({
         : "";
 
       if (!studies.length) {
-        return before + ATTACH_PLAIN + "\n\n" + after;
+        return before + ATTACH_PLAIN + CLOSING + "\n\n" + after;
       }
 
       const studiesBlock = ATTACH_WITH_STUDIES + CLOSING;
