@@ -19,7 +19,7 @@ export const formatNumber = (val) =>
 export const formatCurrencyCompact = (val) => {
   const n = Math.abs(Number(val) || 0);
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000)     return `$${Math.round(n / 1_000)}K`;
   return `$${Math.round(n).toLocaleString()}`;
 };
 
@@ -29,7 +29,7 @@ export const formatCurrencyCompactSigned = (val) => {
   const abs = Math.abs(n);
   let formatted;
   if (abs >= 1_000_000) formatted = `$${(abs / 1_000_000).toFixed(2)}M`;
-  else if (abs >= 1_000) formatted = `$${(abs / 1_000).toFixed(1)}K`;
+  else if (abs >= 1_000) formatted = `$${Math.round(abs / 1_000)}K`;
   else formatted = `$${Math.round(abs).toLocaleString()}`;
   return n >= 0 ? `+${formatted}` : `–${formatted}`;
 };
