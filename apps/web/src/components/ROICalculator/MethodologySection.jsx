@@ -133,7 +133,7 @@ export function MethodologySection({
                   </div>
                   <div>
                     <div className="text-[#636D78] font-semibold mb-1">
-                      Bed Days Freed:
+                      Bed Days Freed For Use:
                     </div>
                     <div className="text-[#636D78]">
                       (Baseline Contaminations − Scenario Contaminations) ×
@@ -185,7 +185,7 @@ export function MethodologySection({
                     <ul className="list-disc list-inside space-y-1 text-[#636D78] pl-1">
                       <li>Expanded to three-scenario comparative model (Baseline, Steripath® Implemented, Increased Steripath Compliance)</li>
                       <li>Added Increased Steripath Compliance scenario: quantify remaining clinical and financial opportunity</li>
-                      <li>Clinical results section: Contaminations Avoided, Bed Days Freed, Potential Mortalities Avoided, AKI Events Avoided, Antibiotic Treatment Days</li>
+                      <li>Clinical results section: Contaminations Avoided, Bed Days Freed For Use, Potential Mortalities Avoided, AKI Events Avoided, Antibiotic Treatment Days</li>
                       <li>Global rate input mode toggle: Blended Rate or Device-Specific across all scenarios</li>
                       <li>Baseline alt-device support: full 4-column rate row matching Steripath® scenario logic</li>
                       <li>Account name autocomplete with 7,000+ MMT customer accounts</li>

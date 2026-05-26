@@ -223,7 +223,7 @@ export async function exportToPDF({
   const financialKpis = [
     { label: "Net Cost Avoidance", value: fmtMoney(netCostAvoidance), icon: iDollar },
     ...(!hidePayback ? [{ label: "Payback Period", value: paybackLabel, icon: iClock }] : []),
-    { label: "Bed Days Freed",     value: fmtN(pdfBedDaysFreed),      icon: iBed  },
+    { label: "Bed Days Freed For Use",     value: fmtN(pdfBedDaysFreed),      icon: iBed  },
   ];
 
   const cardGap  = 3;

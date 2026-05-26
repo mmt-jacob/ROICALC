@@ -82,7 +82,7 @@ export function InteractiveForecast({
               value={formatNumber(calculations.impact.contaminationsAvoided)}
             />
             <ImpactMetric
-              label="Bed Days Freed"
+              label="Bed Days Freed For Use"
               value={formatNumber(calculations.impact.bedDaysFreed)}
             />
           </div>

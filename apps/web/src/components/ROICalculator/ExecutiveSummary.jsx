@@ -180,7 +180,7 @@ export function ExecutiveSummary({
           />
         )}
         <SummaryCard
-          label="Bed Days Freed"
+          label="Bed Days Freed For Use"
           value={formatNumber(Math.round(bedDaysFreed))}
           icon={<Bed size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"

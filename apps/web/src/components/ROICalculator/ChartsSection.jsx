@@ -71,7 +71,7 @@ const CHART_CONFIGS = [
     fmtAxis: fmtAxisNumber,
     fmtTooltip: (v) => `${formatNumber(Math.round(v))} days`,
     yWidth: 44,
-    avoidedLabel: "Bed Days Freed vs. Baseline",
+    avoidedLabel: "Bed Days Freed For Use vs. Baseline",
     getAvoided: (b, c) => b.bedDays - c.bedDays,
     fmtAvoided: (v) => `${formatNumber(Math.round(v))}`,
     getCompDelta: (comp, c) => comp.bedDays - c.bedDays,
