@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { X, FileText, FileType, Mail, Send } from "lucide-react";
+import { loadContacts, filterContacts } from "@/utils/contactsData";
 
 export const STUDIES = [
   {
@@ -82,8 +83,27 @@ const ATTACH_WITH_STUDIES = "\nI've attached the full Impact Analysis for your r
 const CLOSING  = "\n\nHappy to walk through the details and discuss next steps.";
 const SIGN_OFF = "\n\nBest regards,";
 
-function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
+function EmailTagInput({ tags, setTags, inputValue, setInputValue, hospitalName }) {
   const inputRef = useRef(null);
+  const contactsRef = useRef(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
+
+  // Load contacts once on mount
+  useEffect(() => {
+    loadContacts().then((c) => { contactsRef.current = c; });
+  }, []);
+
+  // Recompute suggestions whenever input or hospitalName changes
+  useEffect(() => {
+    if (!contactsRef.current || !inputValue || inputValue.length < 2) {
+      setSuggestions([]);
+      setHighlightIdx(-1);
+      return;
+    }
+    setSuggestions(filterContacts(contactsRef.current, hospitalName, inputValue));
+    setHighlightIdx(-1);
+  }, [inputValue, hospitalName]);
 
   const commitInput = (raw) => {
     const trimmed = raw.trim().replace(/,+$/, "").trim();
@@ -91,6 +111,16 @@ function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
       setTags((prev) => [...prev, trimmed]);
     }
     setInputValue("");
+    setSuggestions([]);
+  };
+
+  const selectSuggestion = (contact) => {
+    if (!tags.includes(contact.email)) {
+      setTags((prev) => [...prev, contact.email]);
+    }
+    setInputValue("");
+    setSuggestions([]);
+    inputRef.current?.focus();
   };
 
   const handleChange = (e) => {
@@ -105,6 +135,27 @@ function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
   };
 
   const handleKeyDown = (e) => {
+    if (suggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightIdx((i) => Math.min(i + 1, suggestions.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightIdx((i) => Math.max(i - 1, -1));
+        return;
+      }
+      if (e.key === "Enter" && highlightIdx >= 0) {
+        e.preventDefault();
+        selectSuggestion(suggestions[highlightIdx]);
+        return;
+      }
+      if (e.key === "Escape") {
+        setSuggestions([]);
+        return;
+      }
+    }
     if (e.key === "Enter" && inputValue.trim()) {
       e.preventDefault();
       commitInput(inputValue);
@@ -113,40 +164,68 @@ function EmailTagInput({ tags, setTags, inputValue, setInputValue }) {
     }
   };
 
-  const handleBlur = () => {
-    if (inputValue.trim()) commitInput(inputValue);
+  const handleBlur = (e) => {
+    // Delay so click on suggestion fires first
+    setTimeout(() => {
+      if (inputValue.trim()) commitInput(inputValue);
+      setSuggestions([]);
+    }, 150);
   };
 
   return (
-    <div
-      className="w-full flex flex-wrap gap-1.5 bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-3 py-2 cursor-text focus-within:border-[#0061D5] focus-within:ring-2 focus-within:ring-[#0061D5]/10 min-h-[42px]"
-      onClick={() => inputRef.current?.focus()}
-    >
-      {tags.map((tag, i) => (
-        <span
-          key={i}
-          className="flex items-center gap-1 bg-[#E2E8EF] text-[#334155] text-sm rounded-lg px-2.5 py-0.5 leading-snug"
-        >
-          {tag}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setTags((prev) => prev.filter((_, j) => j !== i)); }}
-            className="text-[#94A3B8] hover:text-[#334155] transition-colors ml-0.5 leading-none"
+    <div className="relative w-full">
+      <div
+        className="w-full flex flex-wrap gap-1.5 bg-[#F2F6F7] border border-[#CBCFD3] rounded-xl px-3 py-2 cursor-text focus-within:border-[#0061D5] focus-within:ring-2 focus-within:ring-[#0061D5]/10 min-h-[42px]"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {tags.map((tag, i) => (
+          <span
+            key={i}
+            className="flex items-center gap-1 bg-[#E2E8EF] text-[#334155] text-sm rounded-lg px-2.5 py-0.5 leading-snug"
           >
-            <X size={11} />
-          </button>
-        </span>
-      ))}
-      <input
-        ref={inputRef}
-        type="text"
-        value={inputValue}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        onBlur={handleBlur}
-        placeholder={tags.length === 0 ? "name@hospital.com — press Enter or comma to add" : "Add another…"}
-        className="flex-1 min-w-[200px] bg-transparent text-sm text-[#151F26] outline-none py-0.5 placeholder:text-[#9AA1AA]"
-      />
+            {tag}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setTags((prev) => prev.filter((_, j) => j !== i)); }}
+              className="text-[#94A3B8] hover:text-[#334155] transition-colors ml-0.5 leading-none"
+            >
+              <X size={11} />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder={tags.length === 0 ? "name@hospital.com — press Enter or comma to add" : "Add another…"}
+          className="flex-1 min-w-[200px] bg-transparent text-sm text-[#151F26] outline-none py-0.5 placeholder:text-[#9AA1AA]"
+        />
+      </div>
+
+      {suggestions.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#CBCFD3] rounded-xl shadow-lg overflow-hidden">
+          {suggestions.map((c, i) => (
+            <li
+              key={c.email}
+              onMouseDown={(e) => { e.preventDefault(); selectSuggestion(c); }}
+              onMouseEnter={() => setHighlightIdx(i)}
+              className={`flex flex-col px-4 py-2.5 cursor-pointer ${
+                i === highlightIdx ? "bg-[#EAF3FF]" : "hover:bg-[#F2F6F7]"
+              }`}
+            >
+              <span className="text-sm font-semibold text-[#151F26] leading-snug">
+                {c.name} <span className="font-normal text-[#636D78]">&lt;{c.email}&gt;</span>
+              </span>
+              {c.title && (
+                <span className="text-xs text-[#9AA1AA] mt-0.5">{c.title}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -277,6 +356,7 @@ export function StudySelectionModal({
               setTags={setRecipientTags}
               inputValue={recipientInput}
               setInputValue={setRecipientInput}
+              hospitalName={hospitalName}
             />
           </div>
 
