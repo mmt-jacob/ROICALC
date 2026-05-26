@@ -146,8 +146,6 @@ export function ScenarioInputs({
   globalRateMode,
   steripathDeviceCost,
   setSteripathDeviceCost,
-  steripathDevicesPerCulture,
-  setSteripathDevicesPerCulture,
   // Scenario 2 — Steripath Implemented
   steripathUtilization,
   setSteripathUtilization,
@@ -290,13 +288,6 @@ export function ScenarioInputs({
             step="0.01"
             min="0"
             maxDecimals={2}
-          />
-          <InputField
-            label="Devices per Culture"
-            value={steripathDevicesPerCulture}
-            onChange={(e) => setSteripathDevicesPerCulture(Number(e.target.value))}
-            type="number"
-            min="0"
           />
         </div>
       </div>

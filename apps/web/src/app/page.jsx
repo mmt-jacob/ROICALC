@@ -69,11 +69,9 @@ export default function ROICalculator() {
   // Shared alt device
   const [baselineAltUtilization, setBaselineAltUtilization] = useState(80);
   const [baselineAltDeviceCost, setBaselineAltDeviceCost] = useState("15.0");
-  const [baselineAltDevicesPerCulture, setBaselineAltDevicesPerCulture] = useState(1);
 
   // Steripath device params (shared Sc. 2 & 3)
   const [steripathDeviceCost, setSteripathDeviceCost] = useState("19.35");
-  const [steripathDevicesPerCulture, setSteripathDevicesPerCulture] = useState(1);
 
   // Scenario 2 — Steripath Implemented
   const [steripathUtilization, setSteripathUtilization] = useState(80);
@@ -215,9 +213,7 @@ export default function ROICalculator() {
     baselineAltNonSteripathRate,
     baselineAltUtilization,
     baselineAltDeviceCost,
-    baselineAltDevicesPerCulture,
     steripathDeviceCost,
-    steripathDevicesPerCulture,
     steripathUtilization,
     currentSteripathRate,
     currentBlendedRate,
@@ -248,9 +244,7 @@ export default function ROICalculator() {
       baselineAltNonSteripathRate,
       baselineAltUtilization,
       baselineAltDeviceCost,
-      baselineAltDevicesPerCulture,
       steripathDeviceCost,
-      steripathDevicesPerCulture,
       steripathUtilization,
       currentSteripathRate,
       currentBlendedRate,
@@ -290,9 +284,7 @@ export default function ROICalculator() {
         if (d.baselineAltNonSteripathRate !== undefined) { setBaselineAltNonSteripathRate(d.baselineAltNonSteripathRate); setBaselineAltNonSteripathOverridden(true); }
         if (d.baselineAltUtilization !== undefined) setBaselineAltUtilization(Number(d.baselineAltUtilization));
         if (d.baselineAltDeviceCost !== undefined) setBaselineAltDeviceCost(d.baselineAltDeviceCost);
-        if (d.baselineAltDevicesPerCulture !== undefined) setBaselineAltDevicesPerCulture(Number(d.baselineAltDevicesPerCulture));
         if (d.steripathDeviceCost !== undefined) setSteripathDeviceCost(d.steripathDeviceCost);
-        if (d.steripathDevicesPerCulture !== undefined) setSteripathDevicesPerCulture(Number(d.steripathDevicesPerCulture));
         if (d.steripathUtilization !== undefined) setSteripathUtilization(Number(d.steripathUtilization));
         if (d.currentSteripathRate !== undefined) setCurrentSteripathRate(d.currentSteripathRate);
         if (d.currentBlendedRate !== undefined) setCurrentBlendedRate(d.currentBlendedRate);
@@ -318,13 +310,11 @@ export default function ROICalculator() {
     baselineAltNonSteripathRate,
     baselineAltUtilization,
     baselineAltDeviceCost,
-    baselineAltDevicesPerCulture,
     costPerCulture,
     losExtension,
     period,
     globalRateMode,
     steripathDeviceCost,
-    steripathDevicesPerCulture,
     steripathUtilization,
     currentSteripathRate,
     currentBlendedRate,
@@ -503,8 +493,6 @@ export default function ROICalculator() {
               setBaselineAltUtilization={setBaselineAltUtilization}
               baselineAltDeviceCost={baselineAltDeviceCost}
               setBaselineAltDeviceCost={setBaselineAltDeviceCost}
-              baselineAltDevicesPerCulture={baselineAltDevicesPerCulture}
-              setBaselineAltDevicesPerCulture={setBaselineAltDevicesPerCulture}
               globalRateMode={globalRateMode}
               calculations={calculations}
               isMobile={mobileView}
@@ -513,8 +501,6 @@ export default function ROICalculator() {
               globalRateMode={globalRateMode}
               steripathDeviceCost={steripathDeviceCost}
               setSteripathDeviceCost={setSteripathDeviceCost}
-              steripathDevicesPerCulture={steripathDevicesPerCulture}
-              setSteripathDevicesPerCulture={setSteripathDevicesPerCulture}
               steripathUtilization={steripathUtilization}
               setSteripathUtilization={setSteripathUtilization}
               currentSteripathRate={currentSteripathRate}

@@ -163,8 +163,6 @@ export function BaselineInputs({
   setBaselineAltUtilization,
   baselineAltDeviceCost,
   setBaselineAltDeviceCost,
-  baselineAltDevicesPerCulture,
-  setBaselineAltDevicesPerCulture,
   globalRateMode,
   calculations,
   isMobile,
@@ -260,13 +258,6 @@ export function BaselineInputs({
                 min="0"
                 maxDecimals={2}
                 fixedDecimals={2}
-              />
-              <InputField
-                label="Devices per Culture"
-                value={baselineAltDevicesPerCulture}
-                onChange={(e) => setBaselineAltDevicesPerCulture(Number(e.target.value))}
-                type="number"
-                min="0"
               />
             </div>
           </div>

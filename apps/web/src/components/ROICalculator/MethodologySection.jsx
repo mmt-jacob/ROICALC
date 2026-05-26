@@ -87,8 +87,8 @@ export function MethodologySection({
                       Device Investment:
                     </div>
                     <div className="text-[#636D78]">
-                      Volume × Utilization% × Devices per Culture × Cost per
-                      Device
+                      Volume × Utilization% × Cost per Device
+                      (assumes 1 device per culture draw)
                     </div>
                   </div>
                   <div>

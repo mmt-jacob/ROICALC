@@ -585,14 +585,6 @@ export async function exportToPDF({
           best:     `$${Number(inputs.steripathDeviceCost).toFixed(2)}`,
         },
       },
-      {
-        label: "Devices per Culture",
-        vals: {
-          baseline: inputs.baselineHasAltProduct ? String(inputs.baselineAltDevicesPerCulture) : "—",
-          current:  String(inputs.steripathDevicesPerCulture),
-          best:     String(inputs.steripathDevicesPerCulture),
-        },
-      },
     ];
   } else {
     // Device-specific mode: Device Rate → Non-Device Rate → Blended Rate → Utilization → Device Cost → Devices/Culture
@@ -641,14 +633,6 @@ export async function exportToPDF({
           baseline: inputs.baselineHasAltProduct ? `$${Number(inputs.baselineAltDeviceCost).toFixed(2)}` : "—",
           current:  `$${Number(inputs.steripathDeviceCost).toFixed(2)}`,
           best:     `$${Number(inputs.steripathDeviceCost).toFixed(2)}`,
-        },
-      },
-      {
-        label: "Devices per Culture",
-        vals: {
-          baseline: inputs.baselineHasAltProduct ? String(inputs.baselineAltDevicesPerCulture) : "—",
-          current:  String(inputs.steripathDevicesPerCulture),
-          best:     String(inputs.steripathDevicesPerCulture),
         },
       },
     ];

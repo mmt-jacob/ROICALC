@@ -59,8 +59,6 @@ export function CompetitorInputs({
   setCompetitorRate,
   competitorDeviceCost,
   setCompetitorDeviceCost,
-  competitorDevicesPerCulture,
-  setCompetitorDevicesPerCulture,
   competitorUtilization,
   setCompetitorUtilization,
   competitorInputMode,
@@ -127,13 +125,6 @@ export function CompetitorInputs({
               type="number"
               prefix="$"
               step="0.01"
-              min="0"
-            />
-            <InputField
-              label="Devices per Culture"
-              value={competitorDevicesPerCulture}
-              onChange={(e) => setCompetitorDevicesPerCulture(Number(e.target.value))}
-              type="number"
               min="0"
             />
           </div>

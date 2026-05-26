@@ -15,10 +15,8 @@ export function useROICalculations({
   baselineAltNonSteripathRate,  // non-device rate (device mode)
   baselineAltUtilization,
   baselineAltDeviceCost,
-  baselineAltDevicesPerCulture,
   // Steripath device params (shared Sc. 2 & 3)
   steripathDeviceCost,
-  steripathDevicesPerCulture,
   // Scenario 2 — Steripath Implemented
   steripathUtilization,
   currentSteripathRate,
@@ -39,7 +37,7 @@ export function useROICalculations({
     const rateMode = globalRateMode || "blended";
 
     const spDev = Number(steripathDeviceCost) || 0;
-    const spDpc = Number(steripathDevicesPerCulture) || 0;
+    const spDpc = 1; // Devices per culture assumed to be 1
     const spUtil = Number(steripathUtilization) || 0;
     const spBestUtil = Number(bestSteripathUtilization) ?? spUtil;
     const spCur = Number(currentSteripathRate) || 0;
@@ -57,7 +55,7 @@ export function useROICalculations({
       blDeviceCost =
         v *
         altDec *
-        (Number(baselineAltDevicesPerCulture) || 0) *
+        1 * // Devices per culture assumed to be 1
         (Number(baselineAltDeviceCost) || 0);
 
       if (rateMode === "blended") {
@@ -149,8 +147,8 @@ export function useROICalculations({
     volume, baselineRate, costPerCulture, losExtension, period,
     globalRateMode,
     baselineHasAltProduct, baselineAltRate, baselineAltBlendedRate, baselineAltNonSteripathRate,
-    baselineAltUtilization, baselineAltDeviceCost, baselineAltDevicesPerCulture,
-    steripathDeviceCost, steripathDevicesPerCulture,
+    baselineAltUtilization, baselineAltDeviceCost,
+    steripathDeviceCost,
     steripathUtilization, currentSteripathRate, currentBlendedRate, currentNonSteripathRate,
     bestSteripathRate, bestSteripathUtilization, bestBlendedRate, bestNonSteripathRate,
   ]);
