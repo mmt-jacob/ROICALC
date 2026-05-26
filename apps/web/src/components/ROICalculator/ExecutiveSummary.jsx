@@ -136,7 +136,7 @@ export function ExecutiveSummary({
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
           compact={isMobile}
           href={SHOWPAD_LINK}
-          tooltip={`Potentially avoided ${formatNumber(Math.round(mortalityReduction))} ${Math.round(mortalityReduction) === 1 ? "death" : "deaths"} associated with a false positive blood culture contamination`}
+          tooltip={`Potentially avoided ${formatNumber(Math.round(mortalityReduction))} ${Math.round(mortalityReduction) === 1 ? "death" : "deaths"} associated with a false positive blood culture contamination in patients that would have been admitted and given extended antibiotics`}
         />
         <SummaryCard
           label="AKI Events Avoided"
