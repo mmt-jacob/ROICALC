@@ -216,7 +216,7 @@ export async function exportToPDF({
 
   const clinicalKpis = [
     { label: "Contaminations Avoided",           value: fmtN(Math.round(contamAvoided)),          icon: iSyringe },
-    { label: "Potential Mortalities Avoided",    value: `${fmtN(mortalityReduction)} People`,      icon: iUsers,    sublabel: "contaminations avoided × 3.4%" },
+    { label: "Potential Mortalities Avoided",    value: `${fmtN(mortalityReduction)} Lives`,       icon: iUsers,    sublabel: "contaminations avoided × 3.4%" },
     { label: "AKI Events Avoided",               value: fmtN(Math.round(akiAvoided)),              icon: iDroplets, sublabel: "contaminations avoided × 13.4%" },
     { label: "Antibiotic Treatment Days Avoided",value: fmtN(Math.round(antibioticDays)),          icon: iPill,     sublabel: "contaminations avoided × 1 day" },
   ];

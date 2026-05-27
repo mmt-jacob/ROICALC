@@ -130,7 +130,7 @@ export function ExecutiveSummary({
         />
         <SummaryCard
           label="Potential Mortalities Avoided"
-          value={`${formatNumber(Math.round(mortalityReduction))} People`}
+          value={`${formatNumber(Math.round(mortalityReduction))} Lives`}
           sublabel="contaminations avoided × 3.4%"
           icon={<Users size={isMobile ? 16 : 20} className="text-white" />}
           color="bg-gradient-to-br from-[#0061D5] to-[#0842A6]"
