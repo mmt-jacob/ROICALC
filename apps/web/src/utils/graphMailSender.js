@@ -1,4 +1,4 @@
-import { InteractionRequiredAuthError } from "@azure/msal-browser";
+import { InteractionRequiredAuthError, BrowserAuthError } from "@azure/msal-browser";
 import { msalInstance, GRAPH_MAIL_SCOPES } from "./msalConfig";
 
 let initialized = false;
@@ -57,7 +57,12 @@ export async function acquireGraphToken() {
       });
       return result.accessToken;
     } catch (err) {
-      if (!(err instanceof InteractionRequiredAuthError)) throw err;
+      // Also treat MSAL iframe/silent timeout errors as "needs interactive login"
+      // so they fall through to acquireTokenRedirect rather than surfacing as fatal errors.
+      const isTimeout =
+        err instanceof BrowserAuthError &&
+        ["timed_out", "monitor_window_timeout"].includes(err.errorCode);
+      if (!(err instanceof InteractionRequiredAuthError) && !isTimeout) throw err;
     }
   }
 
